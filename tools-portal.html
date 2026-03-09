@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>★kazukiのツール置き場★</title>
+<style>
+/* ===== 90年代スタイル ===== */
+body {
+  background-color: #0a0030;
+  background-image:
+    radial-gradient(circle, #6644aa 1px, transparent 1px),
+    radial-gradient(circle, #334488 1px, transparent 1px);
+  background-size: 30px 30px, 60px 60px;
+  background-position: 0 0, 15px 15px;
+  color: #e8e0ff;
+  font-family: "ＭＳ Ｐゴシック", "MS PGothic", "ＭＳ ゴシック", "MS Gothic", monospace;
+  font-size: 14px;
+  margin: 0;
+  padding: 4px;
+}
+
+/* マーキーアニメ */
+.marquee-wrap {
+  background: #05001a;
+  border-top: 2px solid #44cccc;
+  border-bottom: 2px solid #44cccc;
+  overflow: hidden;
+  padding: 4px 0;
+  white-space: nowrap;
+}
+.marquee-inner {
+  display: inline-block;
+  animation: marquee 18s linear infinite;
+  color: #f0cc44;
+  font-size: 13px;
+  font-weight: bold;
+}
+@keyframes marquee {
+  from { transform: translateX(100vw); }
+  to   { transform: translateX(-100%); }
+}
+
+/* タイトルエリア */
+.title-area {
+  background: linear-gradient(180deg, #aa2299, #220077, #116688);
+  border: 4px outset #8877aa;
+  text-align: center;
+  padding: 10px 4px 6px;
+  margin: 6px 0;
+}
+.site-title-retro {
+  font-size: 28px;
+  font-weight: bold;
+  color: #f0dd55;
+  text-shadow: 3px 3px #cc2244, -1px -1px #44bb66;
+  letter-spacing: 4px;
+  animation: titlecolor 2s steps(1) infinite;
+}
+@keyframes titlecolor {
+  0%   { color: #f0dd55; }
+  25%  { color: #55ddcc; }
+  50%  { color: #dd66cc; }
+  75%  { color: #eeeeff; }
+  100% { color: #f0dd55; }
+}
+.site-subtitle-retro {
+  color: #ffffff;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+/* レインボーライン */
+.rainbow-hr {
+  height: 6px;
+  background: linear-gradient(90deg,
+    #cc3344, #dd7722, #ccbb33, #33aa66,
+    #3399bb, #4455cc, #aa44aa, #cc3344);
+  border: none;
+  margin: 6px 0;
+}
+
+/* 工事中バナー */
+.construction {
+  background: #cc9900;
+  color: #1a0000;
+  border: 3px solid #cc5500;
+  text-align: center;
+  padding: 4px;
+  font-weight: bold;
+  font-size: 12px;
+  animation: blink-bg 1s step-end infinite;
+  margin: 4px 0;
+}
+@keyframes blink-bg {
+  0%, 100% { background: #cc9900; color: #1a0000; }
+  50%       { background: #994400; color: #ffeecc; }
+}
+
+/* キリ番カウンターエリア */
+.counter-section {
+  background: #08001e;
+  border: 3px inset #5544aa;
+  padding: 8px 12px;
+  margin: 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.counter-label {
+  color: #55ee88;
+  font-size: 12px;
+  font-weight: bold;
+}
+.counter-display {
+  display: flex;
+  gap: 2px;
+}
+.counter-digit {
+  background: #001a0a;
+  color: #55ee88;
+  font-family: "Courier New", monospace;
+  font-size: 22px;
+  font-weight: bold;
+  width: 22px;
+  text-align: center;
+  border: 2px inset #225533;
+  line-height: 1.3;
+  text-shadow: 0 0 6px #44cc77;
+}
+.kiriban-box {
+  background: #1a000a;
+  border: 2px outset #bb3355;
+  color: #ee8899;
+  font-size: 11px;
+  padding: 3px 8px;
+  text-align: center;
+}
+.kiriban-num {
+  color: #ee4466;
+  font-size: 16px;
+  font-weight: bold;
+  animation: blink-text 0.8s step-end infinite;
+}
+@keyframes blink-text {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ツールリスト */
+.tools-wrapper {
+  display: table;
+  width: 100%;
+  border-spacing: 0;
+}
+.tools-sidebar {
+  display: table-cell;
+  width: 160px;
+  vertical-align: top;
+  padding-right: 6px;
+}
+.tools-main {
+  display: table-cell;
+  vertical-align: top;
+}
+
+/* サイドバー */
+.sidebar-box {
+  background: #0d0033;
+  border: 3px outset #7766aa;
+  padding: 6px;
+  margin-bottom: 6px;
+}
+.sidebar-title {
+  background: #05001a;
+  color: #eedd55;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border: 1px solid #998833;
+  margin-bottom: 6px;
+  text-align: center;
+}
+.sidebar-link {
+  display: block;
+  color: #77ddcc;
+  text-decoration: none;
+  font-size: 12px;
+  padding: 2px 0;
+  border-bottom: 1px dotted #332266;
+}
+.sidebar-link:hover {
+  background: #220066;
+  color: #eeeeff;
+  text-decoration: underline;
+}
+.sidebar-link::before {
+  content: "▶ ";
+  color: #cc55bb;
+}
+
+.new-badge {
+  display: inline;
+  background: #bb2233;
+  color: #ffeecc;
+  font-size: 9px;
+  font-weight: bold;
+  padding: 1px 3px;
+  border: 1px solid #ee9933;
+  vertical-align: middle;
+  animation: blink-text 0.6s step-end infinite;
+}
+
+/* カテゴリフィルター */
+.filter-area {
+  background: #05001a;
+  border: 2px inset #5544aa;
+  padding: 5px 8px;
+  margin-bottom: 6px;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filter-label {
+  color: #eedd55;
+  font-size: 11px;
+  font-weight: bold;
+  margin-right: 4px;
+}
+.filter-btn-retro {
+  background: #c0c0c0;
+  color: #000000;
+  border: 3px outset #ffffff;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.filter-btn-retro:active,
+.filter-btn-retro.active {
+  border-style: inset;
+  background: #808080;
+  color: #ffffff;
+}
+.filter-btn-retro:hover {
+  background: #e0e0e0;
+}
+
+/* 検索 */
+.search-area {
+  background: #05001a;
+  border: 2px inset #5544aa;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.search-area label {
+  color: #66cccc;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.search-input-retro {
+  background: #ffffff;
+  color: #000000;
+  border: 3px inset #808080;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 2px 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ツールカードテーブル */
+.tool-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.tool-row {
+  background: #0a0028;
+  border: 2px outset #6655aa;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: stretch;
+  border-bottom: 3px outset #7766bb;
+}
+.tool-icon-cell {
+  background: #100044;
+  border-right: 2px inset #332266;
+  padding: 10px 12px;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+}
+.tool-info-cell {
+  padding: 8px 10px;
+  flex: 1;
+}
+.tool-name-retro {
+  color: #eedd55;
+  font-size: 15px;
+  font-weight: bold;
+  text-shadow: 1px 1px #bb6600;
+}
+.tool-tag-retro {
+  display: inline;
+  background: #660055;
+  color: #ffccee;
+  font-size: 9px;
+  padding: 1px 4px;
+  border: 1px solid #cc55aa;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.tool-desc-retro {
+  color: #aaaadd;
+  font-size: 12px;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.tool-open-btn {
+  background: #225522;
+  border: 3px outset #449944;
+  color: #ccffcc;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 10px;
+  cursor: pointer;
+  margin-top: 6px;
+  text-decoration: none;
+  display: inline-block;
+}
+.tool-open-btn:hover {
+  background: #337733;
+  color: #eeffaa;
+}
+.tool-open-btn:active {
+  border-style: inset;
+}
+
+/* 追加ボタン行 */
+.add-row {
+  background: #060e06;
+  border: 2px dashed #448844;
+  padding: 10px;
+  text-align: center;
+  color: #66bb66;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.add-row:hover {
+  background: #0d1f0d;
+}
+
+/* フッター */
+.footer-area {
+  text-align: center;
+  padding: 8px 4px 4px;
+  border-top: 4px double #448899;
+  margin-top: 8px;
+}
+.footer-txt {
+  color: #7777aa;
+  font-size: 10px;
+  line-height: 1.8;
+}
+.footer-txt a {
+  color: #5599cc;
+}
+.best-viewed {
+  color: #ccbb44;
+  font-size: 10px;
+  border: 1px solid #887722;
+  display: inline-block;
+  padding: 1px 6px;
+  margin-top: 4px;
+}
+
+/* 光るテキスト */
+.glow {
+  animation: glow-anim 1.5s ease-in-out infinite;
+}
+@keyframes glow-anim {
+  0%,100% { text-shadow: 0 0 4px #44aaaa, 0 0 8px #44aaaa; }
+  50%      { text-shadow: 0 0 10px #aa44aa, 0 0 18px #aa44aa; }
+}
+
+/* キリ番メッセージポップアップ */
+.kiriban-popup {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #2a1800;
+  border: 6px outset #996622;
+  padding: 20px 32px;
+  text-align: center;
+  z-index: 999;
+  color: #ffeecc;
+  font-weight: bold;
+  font-size: 16px;
+}
+.kiriban-popup.show { display: block; }
+.kiriban-popup-title {
+  color: #ee4466;
+  font-size: 22px;
+  animation: blink-text 0.5s step-end infinite;
+}
+.kiriban-close-btn {
+  background: #882233;
+  color: #ffeeee;
+  border: 3px outset #cc6677;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 3px 14px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<!-- ★ マーキー ★ -->
+<div class="marquee-wrap">
+  <span class="marquee-inner">
+    ★★★ kazukiのツール置き場へようこそ！★★★　　　当サイトはIE4.0/Netscape4.7推奨です　　　相互リンク大歓迎！管理人へメールを！　　　最終更新：2026年3月3日
+  </span>
+</div>
+
+<!-- ★ タイトル ★ -->
+<div class="title-area">
+  <div class="site-title-retro">★ My Tools ★</div>
+  <div class="site-subtitle-retro">〜 kazukiの自作ツール置き場 〜</div>
+  <div style="font-size:11px; color:#ffff88; margin-top:4px;">
+    ＊このサイトで公開しているツールは自由にお使いください＊
+  </div>
+</div>
+
+<div class="rainbow-hr"></div>
+
+<!-- ★ 工事中バナー ★ -->
+<div class="construction">
+  ⚠ 【工事中】 ｻｲﾄ制作ちゅう！ごめんなさい ⚠　　🚧 Under Construction 🚧
+</div>
+
+<!-- ★ キリ番カウンター ★ -->
+<div class="counter-section">
+  <div>
+    <div class="counter-label">★ アクセスカウンター ★</div>
+    <div style="font-size:11px; color:#008800; margin-top:2px;">本日もご来訪ありがとうございます！</div>
+    <div class="counter-display" id="counterDisplay"></div>
+  </div>
+  <div class="kiriban-box">
+    <div style="font-size:10px; margin-bottom:2px;">次のキリ番は</div>
+    <div class="kiriban-num" id="nextKiriban">---</div>
+    <div style="font-size:10px; margin-top:2px;">ゲットした方はBBSへ！</div>
+  </div>
+</div>
+
+<div class="rainbow-hr"></div>
+
+<!-- ★ メインレイアウト ★ -->
+<div class="tools-wrapper">
+
+  <!-- サイドバー -->
+  <div class="tools-sidebar">
+    <div class="sidebar-box">
+      <div class="sidebar-title">■ MENU ■</div>
+      <a href="#" class="sidebar-link">TOP</a>
+      <a href="#" class="sidebar-link">ツール一覧 <span class="new-badge">NEW</span></a>
+      <a href="#" class="sidebar-link">更新履歴</a>
+      <a href="#" class="sidebar-link">掲示板(BBS)</a>
+      <a href="#" class="sidebar-link">自己紹介</a>
+      <a href="#" class="sidebar-link">リンク集</a>
+      <a href="#" class="sidebar-link">メール</a>
+    </div>
+    <div class="sidebar-box">
+      <div class="sidebar-title">■ カテゴリ ■</div>
+      <a href="#" class="sidebar-link">テキスト系</a>
+      <a href="#" class="sidebar-link">計算・変換</a>
+      <a href="#" class="sidebar-link">ユーティリティ</a>
+    </div>
+    <div class="sidebar-box" style="font-size:10px; color:#ffff88; line-height:1.8;">
+      <div class="sidebar-title">■ INFO ■</div>
+      <div>管理人：kazuki</div>
+      <div>開設：2026/03</div>
+      <div>ツール数：3本</div>
+      <div style="margin-top:4px; color:#ff8888;">＊無断転載禁止＊</div>
+    </div>
+  </div>
+
+  <!-- メインコンテンツ -->
+  <div class="tools-main">
+
+    <!-- 検索・フィルター -->
+    <div class="search-area">
+      <label>🔍 検索：</label>
+      <input class="search-input-retro" type="text" placeholder="ツール名を入力..." id="searchInput" />
+    </div>
+    <div class="filter-area">
+      <span class="filter-label">カテゴリ絞込▶</span>
+      <button class="filter-btn-retro active" data-filter="all">【全て】</button>
+      <button class="filter-btn-retro" data-filter="text">テキスト</button>
+      <button class="filter-btn-retro" data-filter="calc">計算</button>
+      <button class="filter-btn-retro" data-filter="util">ユーティリティ</button>
+    </div>
+
+    <!-- ツール一覧 -->
+    <div id="toolList">
+
+      <!-- Tool 1 -->
+      <div class="tool-row" data-category="text">
+        <div class="tool-icon-cell">✍️</div>
+        <div class="tool-info-cell">
+          <div class="tool-name-retro">
+            文字カウンター
+            <span class="tool-tag-retro">テキスト</span>
+            <span class="new-badge">NEW</span>
+          </div>
+          <div class="tool-desc-retro">
+            入力した文章の文字数・単語数・行数をリアルタイムでカウントするツールです。<br>
+            ブログや作文の文字数チェックにどうぞ！
+          </div>
+          <a href="#" class="tool-open-btn">▶ ツールを開く</a>
+        </div>
+      </div>
+
+      <!-- Tool 2 -->
+      <div class="tool-row" data-category="calc">
+        <div class="tool-icon-cell">🔢</div>
+        <div class="tool-info-cell">
+          <div class="tool-name-retro">
+            単位変換ツール
+            <span class="tool-tag-retro">計算</span>
+          </div>
+          <div class="tool-desc-retro">
+            長さ・重さ・温度などの単位をかんたんに変換できます。<br>
+            海外のレシピや輸入品の仕様確認にも便利！
+          </div>
+          <a href="#" class="tool-open-btn">▶ ツールを開く</a>
+        </div>
+      </div>
+
+      <!-- Tool 3 -->
+      <div class="tool-row" data-category="util">
+        <div class="tool-icon-cell">🎲</div>
+        <div class="tool-info-cell">
+          <div class="tool-name-retro">
+            ランダム生成ツール
+            <span class="tool-tag-retro">ユーティリティ</span>
+          </div>
+          <div class="tool-desc-retro">
+            パスワードやランダムな文字列・数字をワンクリックで生成します。<br>
+            長さや文字種も自由にカスタマイズ可能！
+          </div>
+          <a href="#" class="tool-open-btn">▶ ツールを開く</a>
+        </div>
+      </div>
+
+    </div><!-- /#toolList -->
+
+    <!-- 追加 -->
+    <div class="add-row">
+      ＋ ツールを追加する（準備中...）
+    </div>
+
+  </div><!-- /.tools-main -->
+</div><!-- /.tools-wrapper -->
+
+<div class="rainbow-hr"></div>
+
+<!-- フッター -->
+<div class="footer-area">
+  <div class="glow" style="color:#00ffff; font-size:13px; font-weight:bold; margin-bottom:4px;">
+    ★ ご来訪ありがとうございました ★
+  </div>
+  <div class="footer-txt">
+    Copyright &copy; 2026 kazuki All Rights Reserved.<br>
+    当サイトへのリンクはご自由にどうぞ。画像の無断転載は禁止。<br>
+    <a href="#">管理人へメール</a> ／ <a href="#">掲示板(BBS)</a> ／ <a href="#">相互リンク申請</a>
+  </div>
+  <div class="best-viewed">★ Netscape Navigator 4.x / IE 4.x 推奨 解像度800×600以上 ★</div>
+</div>
+
+<!-- キリ番ポップアップ -->
+<div class="kiriban-popup" id="kiribanPopup">
+  <div class="kiriban-popup-title">🎉 キリ番おめでとう！ 🎉</div>
+  <div id="kiribanMsg" style="margin: 8px 0; font-size: 14px;"></div>
+  <div style="font-size: 11px; color: #333;">掲示板にカキコしてください！</div>
+  <button class="kiriban-close-btn" onclick="closeKiriban()">閉じる</button>
+</div>
+
+<script>
+// ====== キリ番カウンター ======
+const KIRIBAN_TARGETS = [100, 500, 1000, 2000, 5000, 10000];
+
+function getCount() {
+  const stored = localStorage.getItem('site_visit_count');
+  return stored ? parseInt(stored, 10) : 0;
+}
+function saveCount(n) {
+  localStorage.setItem('site_visit_count', String(n));
+}
+function getNextKiriban(count) {
+  for (const t of KIRIBAN_TARGETS) {
+    if (t > count) return t;
+  }
+  return Math.ceil(count / 10000 + 1) * 10000;
+}
+
+function renderCounter(count) {
+  const s = String(count).padStart(7, '0');
+  const el = document.getElementById('counterDisplay');
+  el.innerHTML = '';
+  for (const ch of s) {
+    const d = document.createElement('span');
+    d.className = 'counter-digit';
+    d.textContent = ch;
+    el.appendChild(d);
+  }
+}
+
+function checkKiriban(count) {
+  if (KIRIBAN_TARGETS.includes(count)) {
+    document.getElementById('kiribanMsg').textContent =
+      'あなたは ' + count + ' 番目のお客様です！';
+    document.getElementById('kiribanPopup').classList.add('show');
+  }
+}
+
+function closeKiriban() {
+  document.getElementById('kiribanPopup').classList.remove('show');
+}
+
+// 初回アクセスでカウントアップ
+let count = getCount() + 1;
+saveCount(count);
+renderCounter(count);
+document.getElementById('nextKiriban').textContent = getNextKiriban(count).toLocaleString();
+checkKiriban(count);
+
+
+// ====== フィルター ======
+const filterBtns = document.querySelectorAll('.filter-btn-retro');
+function getRows() { return document.querySelectorAll('.tool-row'); }
+
+filterBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    getRows().forEach(row => {
+      row.style.display = (filter === 'all' || row.dataset.category === filter) ? '' : 'none';
+    });
+  });
+});
+
+// ====== 検索 ======
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  getRows().forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(q) ? '' : 'none';
+  });
+});
+</script>
+
+</body>
+</html>
