@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>文字カウンター ★ kazukiのツール置き場</title>
+<style>
+/* ===== 共通90年代スタイル ===== */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background-color: #0a0030;
+  background-image:
+    radial-gradient(circle, #6644aa 1px, transparent 1px),
+    radial-gradient(circle, #334488 1px, transparent 1px);
+  background-size: 30px 30px, 60px 60px;
+  background-position: 0 0, 15px 15px;
+  color: #e8e0ff;
+  font-family: "ＭＳ Ｐゴシック", "MS PGothic", "ＭＳ ゴシック", "MS Gothic", monospace;
+  font-size: 14px;
+  margin: 0;
+  padding: 4px;
+}
+.marquee-wrap {
+  background: #05001a;
+  border-top: 2px solid #44cccc;
+  border-bottom: 2px solid #44cccc;
+  overflow: hidden;
+  padding: 4px 0;
+  white-space: nowrap;
+}
+.marquee-inner {
+  display: inline-block;
+  animation: marquee 18s linear infinite;
+  color: #f0cc44;
+  font-size: 13px;
+  font-weight: bold;
+}
+@keyframes marquee {
+  from { transform: translateX(100vw); }
+  to   { transform: translateX(-100%); }
+}
+.title-area {
+  background: linear-gradient(180deg, #aa2299, #220077, #116688);
+  border: 4px outset #8877aa;
+  text-align: center;
+  padding: 10px 4px 6px;
+  margin: 6px 0;
+}
+.site-title-retro {
+  font-size: 22px;
+  font-weight: bold;
+  color: #f0dd55;
+  text-shadow: 3px 3px #cc2244, -1px -1px #44bb66;
+  letter-spacing: 2px;
+  animation: titlecolor 2s steps(1) infinite;
+}
+@keyframes titlecolor {
+  0%   { color: #f0dd55; }
+  25%  { color: #55ddcc; }
+  50%  { color: #dd66cc; }
+  75%  { color: #eeeeff; }
+  100% { color: #f0dd55; }
+}
+.site-subtitle-retro { color: #ccccff; font-size: 11px; margin-top: 4px; }
+.rainbow-hr {
+  height: 6px;
+  background: linear-gradient(90deg, #cc3344, #dd7722, #ccbb33, #33aa66, #3399bb, #4455cc, #aa44aa, #cc3344);
+  border: none;
+  margin: 6px 0;
+}
+.page-wrapper {
+  display: table;
+  width: 100%;
+  border-spacing: 0;
+}
+.sidebar {
+  display: table-cell;
+  width: 160px;
+  vertical-align: top;
+  padding-right: 6px;
+}
+.main-content {
+  display: table-cell;
+  vertical-align: top;
+}
+.sidebar-box {
+  background: #0d0033;
+  border: 3px outset #7766aa;
+  padding: 6px;
+  margin-bottom: 6px;
+}
+.sidebar-title {
+  background: #05001a;
+  color: #eedd55;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border: 1px solid #998833;
+  margin-bottom: 6px;
+  text-align: center;
+}
+.sidebar-link {
+  display: block;
+  color: #77ddcc;
+  text-decoration: none;
+  font-size: 12px;
+  padding: 2px 0;
+  border-bottom: 1px dotted #332266;
+}
+.sidebar-link:hover { background: #220066; color: #eeeeff; text-decoration: underline; }
+.sidebar-link::before { content: "▶ "; color: #cc55bb; }
+.footer-area {
+  text-align: center;
+  padding: 8px 4px 4px;
+  border-top: 4px double #448899;
+  margin-top: 8px;
+}
+.footer-txt { color: #7777aa; font-size: 10px; line-height: 1.8; }
+.footer-txt a { color: #5599cc; }
+.best-viewed {
+  color: #ccbb44; font-size: 10px;
+  border: 1px solid #887722;
+  display: inline-block; padding: 1px 6px; margin-top: 4px;
+}
+.glow { animation: glow-anim 1.5s ease-in-out infinite; }
+@keyframes glow-anim {
+  0%,100% { text-shadow: 0 0 4px #44aaaa, 0 0 8px #44aaaa; }
+  50%      { text-shadow: 0 0 10px #aa44aa, 0 0 18px #aa44aa; }
+}
+
+/* ===== ツール固有スタイル ===== */
+.tool-box {
+  background: #08001e;
+  border: 3px inset #5544aa;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.tool-box-title {
+  background: #05001a;
+  color: #eedd55;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 3px 8px;
+  border: 1px solid #998833;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+.tool-textarea {
+  width: 100%;
+  height: 220px;
+  background: #000a1a;
+  color: #ddffdd;
+  border: 3px inset #334466;
+  font-family: "ＭＳ Ｐゴシック", "MS PGothic", monospace;
+  font-size: 13px;
+  padding: 6px;
+  resize: vertical;
+  line-height: 1.6;
+}
+.tool-textarea:focus { outline: none; border-color: #6688aa; }
+.tool-textarea::placeholder { color: #334455; }
+
+/* カウント結果ボックス */
+.count-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+.count-item {
+  background: #000a00;
+  border: 2px inset #224422;
+  padding: 6px 4px;
+  text-align: center;
+}
+.count-label {
+  color: #77ccaa;
+  font-size: 10px;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.count-value {
+  color: #55ee88;
+  font-family: "Courier New", monospace;
+  font-size: 24px;
+  font-weight: bold;
+  text-shadow: 0 0 6px #44cc77;
+  word-break: break-all;
+}
+.count-unit {
+  color: #558855;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+/* ボタン類 */
+.btn-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.retro-btn {
+  background: #c0c0c0;
+  color: #000000;
+  border: 3px outset #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+.retro-btn:active { border-style: inset; background: #808080; color: #fff; }
+.retro-btn:hover { background: #e0e0e0; }
+.retro-btn.danger { background: #cc4444; color: #fff; border-color: #ff8888; }
+.retro-btn.danger:hover { background: #ee5555; }
+
+/* オプション設定 */
+.options-box {
+  background: #05001a;
+  border: 2px inset #5544aa;
+  padding: 6px 10px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.options-box label {
+  color: #aaaadd;
+  margin-right: 16px;
+  cursor: pointer;
+}
+.options-box input[type="checkbox"] { margin-right: 4px; vertical-align: middle; }
+
+/* 文字種別内訳 */
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.breakdown-table th {
+  background: #0d0033;
+  color: #eedd55;
+  border: 1px solid #443388;
+  padding: 3px 8px;
+  text-align: left;
+}
+.breakdown-table td {
+  background: #05001a;
+  color: #aaaadd;
+  border: 1px solid #332266;
+  padding: 3px 8px;
+}
+.breakdown-table td.num {
+  color: #55ee88;
+  font-family: "Courier New", monospace;
+  font-weight: bold;
+  text-align: right;
+  width: 60px;
+}
+.breakdown-table tr:hover td { background: #0a0028; }
+</style>
+</head>
+<body>
+
+<!-- マーキー -->
+<div class="marquee-wrap">
+  <span class="marquee-inner">
+    ✍ 文字カウンター — 文字数・行数・バイト数をリアルタイム計測！　　　★ kazukiのツール置き場 ★　　　ブログ・作文・Twitter文字数チェックに！
+  </span>
+</div>
+
+<!-- タイトル -->
+<div class="title-area">
+  <div class="site-subtitle-retro">★ kazukiのツール置き場 ★</div>
+  <div class="site-title-retro">✍ 文字カウンター</div>
+  <div style="font-size:11px; color:#aabbff; margin-top:4px;">文字数・行数・バイト数をリアルタイムにカウントします</div>
+</div>
+
+<div class="rainbow-hr"></div>
+
+<!-- メインレイアウト -->
+<div class="page-wrapper">
+
+  <!-- サイドバー -->
+  <div class="sidebar">
+    <div class="sidebar-box">
+      <div class="sidebar-title">■ MENU ■</div>
+      <a href="index.html" class="sidebar-link">TOP</a>
+      <a href="index.html" class="sidebar-link">ツール一覧</a>
+      <a href="history.html" class="sidebar-link">更新履歴</a>
+      <a href="bbs.html" class="sidebar-link">掲示板(BBS)</a>
+      <a href="profile.html" class="sidebar-link">自己紹介</a>
+      <a href="links.html" class="sidebar-link">リンク集</a>
+      <a href="mail.html" class="sidebar-link">メール</a>
+    </div>
+    <div class="sidebar-box">
+      <div class="sidebar-title">■ ツール ■</div>
+      <a href="tool-mojicounter.html" class="sidebar-link" style="color:#f0dd55;">▷文字カウンター</a>
+      <a href="tool-unit.html" class="sidebar-link">単位変換</a>
+      <a href="tool-random.html" class="sidebar-link">ランダム生成</a>
+    </div>
+    <div class="sidebar-box" style="font-size:10px; color:#aabbdd; line-height:1.8;">
+      <div class="sidebar-title">■ 使い方 ■</div>
+      <div>テキストエリアに</div>
+      <div>文章を貼り付けると</div>
+      <div>自動でカウント！</div>
+      <div style="margin-top:4px; color:#778899;">コピペOK◎</div>
+    </div>
+  </div>
+
+  <!-- メインコンテンツ -->
+  <div class="main-content">
+
+    <!-- テキスト入力 -->
+    <div class="tool-box">
+      <div class="tool-box-title">★ テキストを入力 / 貼り付け ★</div>
+      <textarea
+        class="tool-textarea"
+        id="inputText"
+        placeholder="ここに文章を入力または貼り付けてください..."
+        oninput="countAll()"
+      ></textarea>
+
+      <div class="btn-row">
+        <button class="retro-btn" onclick="copyText()">📋 コピー</button>
+        <button class="retro-btn danger" onclick="clearText()">🗑 クリア</button>
+        <button class="retro-btn" onclick="trimSpaces()">✂ 前後の空白除去</button>
+      </div>
+    </div>
+
+    <!-- カウント結果 -->
+    <div class="tool-box">
+      <div class="tool-box-title">★ カウント結果 ★</div>
+
+      <div class="count-grid">
+        <div class="count-item">
+          <div class="count-label">総文字数<br>（空白含む）</div>
+          <div class="count-value" id="cnt-total">0</div>
+          <div class="count-unit">文字</div>
+        </div>
+        <div class="count-item">
+          <div class="count-label">文字数<br>（空白・改行除く）</div>
+          <div class="count-value" id="cnt-nospace">0</div>
+          <div class="count-unit">文字</div>
+        </div>
+        <div class="count-item">
+          <div class="count-label">行数</div>
+          <div class="count-value" id="cnt-lines">0</div>
+          <div class="count-unit">行</div>
+        </div>
+        <div class="count-item">
+          <div class="count-label">段落数</div>
+          <div class="count-value" id="cnt-para">0</div>
+          <div class="count-unit">段落</div>
+        </div>
+        <div class="count-item">
+          <div class="count-label">バイト数<br>（UTF-8）</div>
+          <div class="count-value" id="cnt-bytes">0</div>
+          <div class="count-unit">byte</div>
+        </div>
+        <div class="count-item">
+          <div class="count-label">半角文字数</div>
+          <div class="count-value" id="cnt-half">0</div>
+          <div class="count-unit">文字</div>
+        </div>
+        <div class="count-item">
+          <div class="count-label">全角文字数</div>
+          <div class="count-value" id="cnt-full">0</div>
+          <div class="count-unit">文字</div>
+        </div>
+        <div class="count-item">
+          <div class="count-label">読み時間<br>（400字/分）</div>
+          <div class="count-value" id="cnt-time">0</div>
+          <div class="count-unit">分</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 文字種別内訳 -->
+    <div class="tool-box">
+      <div class="tool-box-title">★ 文字種別の内訳 ★</div>
+      <table class="breakdown-table">
+        <tr>
+          <th>種別</th>
+          <th>説明</th>
+          <th>文字数</th>
+        </tr>
+        <tr>
+          <td>漢字</td>
+          <td>CJK統合漢字</td>
+          <td class="num" id="bd-kanji">0</td>
+        </tr>
+        <tr>
+          <td>ひらがな</td>
+          <td>あ〜ん</td>
+          <td class="num" id="bd-hira">0</td>
+        </tr>
+        <tr>
+          <td>カタカナ</td>
+          <td>ア〜ン（全角・半角）</td>
+          <td class="num" id="bd-kata">0</td>
+        </tr>
+        <tr>
+          <td>英字</td>
+          <td>A-Z, a-z</td>
+          <td class="num" id="bd-alpha">0</td>
+        </tr>
+        <tr>
+          <td>数字</td>
+          <td>0-9（全角・半角）</td>
+          <td class="num" id="bd-num">0</td>
+        </tr>
+        <tr>
+          <td>記号・その他</td>
+          <td>句読点・記号など</td>
+          <td class="num" id="bd-sym">0</td>
+        </tr>
+        <tr>
+          <td>空白・改行</td>
+          <td>スペース・タブ・改行</td>
+          <td class="num" id="bd-space">0</td>
+        </tr>
+      </table>
+    </div>
+
+  </div><!-- /.main-content -->
+</div><!-- /.page-wrapper -->
+
+<div class="rainbow-hr"></div>
+
+<!-- フッター -->
+<div class="footer-area">
+  <div class="glow" style="color:#77cccc; font-size:12px; font-weight:bold; margin-bottom:4px;">
+    ★ ご利用ありがとうございました ★
+  </div>
+  <div class="footer-txt">
+    Copyright &copy; 2026 kazuki All Rights Reserved.<br>
+    <a href="index.html">TOP</a> ／ <a href="bbs.html">掲示板(BBS)</a> ／ <a href="mail.html">メール</a>
+  </div>
+  <div class="best-viewed">★ Netscape Navigator 4.x / IE 4.x 推奨 解像度800×600以上 ★</div>
+</div>
+
+<script>
+function countAll() {
+  const text = document.getElementById('inputText').value;
+
+  // 総文字数
+  document.getElementById('cnt-total').textContent = text.length;
+
+  // 空白・改行除く
+  document.getElementById('cnt-nospace').textContent = text.replace(/[\s\u3000]/g, '').length;
+
+  // 行数
+  const lines = text === '' ? 0 : text.split('\n').length;
+  document.getElementById('cnt-lines').textContent = lines;
+
+  // 段落数（空行区切り）
+  const paras = text.trim() === '' ? 0 : text.trim().split(/\n\s*\n+/).length;
+  document.getElementById('cnt-para').textContent = paras;
+
+  // UTF-8バイト数
+  const bytes = new TextEncoder().encode(text).length;
+  document.getElementById('cnt-bytes').textContent = bytes;
+
+  // 半角・全角
+  let half = 0, full = 0;
+  for (const ch of text) {
+    const code = ch.codePointAt(0);
+    if (code <= 0x7E || (code >= 0xFF61 && code <= 0xFF9F)) half++;
+    else full++;
+  }
+  document.getElementById('cnt-half').textContent = half;
+  document.getElementById('cnt-full').textContent = full;
+
+  // 読み時間（400字/分）
+  const nosp = text.replace(/[\s\u3000]/g, '').length;
+  document.getElementById('cnt-time').textContent = nosp === 0 ? 0 : Math.ceil(nosp / 400);
+
+  // ===== 内訳 =====
+  let kanji=0, hira=0, kata=0, alpha=0, num=0, sym=0, space=0;
+  for (const ch of text) {
+    const code = ch.codePointAt(0);
+    if (/\s/.test(ch) || ch === '\u3000') {
+      space++;
+    } else if (code >= 0x4E00 && code <= 0x9FFF) {
+      kanji++;
+    } else if (code >= 0x3040 && code <= 0x309F) {
+      hira++;
+    } else if ((code >= 0x30A0 && code <= 0x30FF) || (code >= 0xFF61 && code <= 0xFF9F)) {
+      kata++;
+    } else if (/[A-Za-zＡ-Ｚａ-ｚ]/.test(ch)) {
+      alpha++;
+    } else if (/[0-9０-９]/.test(ch)) {
+      num++;
+    } else {
+      sym++;
+    }
+  }
+  document.getElementById('bd-kanji').textContent  = kanji;
+  document.getElementById('bd-hira').textContent   = hira;
+  document.getElementById('bd-kata').textContent   = kata;
+  document.getElementById('bd-alpha').textContent  = alpha;
+  document.getElementById('bd-num').textContent    = num;
+  document.getElementById('bd-sym').textContent    = sym;
+  document.getElementById('bd-space').textContent  = space;
+}
+
+function clearText() {
+  document.getElementById('inputText').value = '';
+  countAll();
+}
+
+function copyText() {
+  const text = document.getElementById('inputText').value;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('クリップボードにコピーしました！');
+  });
+}
+
+function trimSpaces() {
+  const el = document.getElementById('inputText');
+  el.value = el.value.trim();
+  countAll();
+}
+</script>
+
+</body>
+</html>
