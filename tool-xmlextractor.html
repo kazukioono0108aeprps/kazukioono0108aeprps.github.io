@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premiere Pro XML テロップ抽出ツール v11</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #a78bfa;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  /* ===== TABS ===== */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #2a2a4a;
+  }
+  .tab-btn {
+    padding: 10px 22px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 6px 6px 0 0;
+  }
+  .tab-btn:hover { color: #a78bfa; background: rgba(167,139,250,0.08); }
+  .tab-btn.active {
+    color: #a78bfa;
+    border-bottom-color: #a78bfa;
+    background: rgba(167,139,250,0.10);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ===== DROP ZONE ===== */
+  .drop-zone {
+    border: 2px dashed #4a4a6a;
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #16213e;
+    margin-bottom: 20px;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: #a78bfa;
+    background: #1a2745;
+  }
+  .drop-zone p { font-size: 15px; color: #8888aa; margin-bottom: 8px; }
+  .drop-zone .sub { font-size: 13px; color: #5a5a7a; }
+  .drop-zone input[type="file"] { display: none; }
+
+  /* ===== UNIFIED OPTIONS ===== */
+  .unified-options {
+    background: #16213e;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .opts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px 20px;
+  }
+  .opts-grid label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .opts-grid input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #a78bfa;
+    flex-shrink: 0;
+  }
+  .opts-section { display: flex; flex-direction: column; gap: 10px; }
+  .opts-divider {
+    border: none;
+    border-top: 1px solid #2a2a4a;
+    margin: 2px 0;
+  }
+  .opts-convert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+  }
+  .opts-convert span { color: #a0a0c0; }
+  .opts-convert select {
+    background: #0f0f23;
+    color: #e0e0e0;
+    border: 1px solid #3a3a5a;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .opts-convert select:focus { outline: none; border-color: #a78bfa; }
+
+  /* ===== ACTIONS ===== */
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .actions button {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-copy { background: #a78bfa; color: #fff; }
+  .btn-copy:hover { background: #8b5cf6; }
+  .btn-download { background: #334155; color: #e0e0e0; }
+  .btn-download:hover { background: #475569; }
+  .btn-clear { background: #3f1c1c; color: #f87171; }
+  .btn-clear:hover { background: #5a2020; }
+
+  /* ===== RESULT BOX ===== */
+  .result-info { font-size: 13px; color: #8888aa; margin-bottom: 8px; }
+  .dup-info { font-size: 13px; color: #eab308; margin-bottom: 8px; }
+  .result-box {
+    background: #0f0f23;
+    border: 1px solid #2a2a4a;
+    border-radius: 8px;
+    padding: 20px;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 70vh;
+    overflow-y: auto;
+    color: #d0d0d0;
+  }
+  .result-box .seq-name { color: #a78bfa; font-weight: bold; }
+  .result-box .timecode { color: #60a5fa; }
+  .result-box .blank { color: #6b7280; font-style: italic; }
+  .result-box .text-line { color: #e0e0e0; }
+  .result-box .dup-block {
+    background: rgba(234, 179, 8, 0.18);
+    border-left: 3px solid #eab308;
+    padding-left: 6px;
+    margin-left: -9px;
+  }
+  .result-box .dup-block .text-line { color: #fde68a; }
+  .result-box .dup-block .timecode { color: #93c5fd; }
+  .result-box .sp-removed {
+    background: #ef4444;
+    color: #fff;
+    border-radius: 2px;
+    padding: 0 2px;
+    font-size: 10px;
+    margin-left: 2px;
+    vertical-align: middle;
+  }
+
+  /* ===== TEXT EDITOR TAB ===== */
+  .text-file-zone {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px dashed #3a3a5a;
+    border-radius: 8px;
+    padding: 10px 16px;
+    background: #16213e;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .text-file-zone:hover, .text-file-zone.dragover {
+    border-color: #a78bfa;
+    background: #1a2745;
+  }
+  .text-file-icon { font-size: 18px; flex-shrink: 0; }
+  .text-file-label { font-size: 13px; color: #a0a0c0; flex: 1; }
+  .text-file-sub { font-size: 11px; color: #4a4a6a; }
+  .text-file-zone input[type="file"] { display: none; }
+
+  .text-input-area {
+    width: 100%;
+    min-height: 220px;
+    background: #0f0f23;
+    border: 1px solid #3a3a5a;
+    border-radius: 8px;
+    padding: 14px;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #e0e0e0;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 14px;
+  }
+  .text-input-area:focus { border-color: #a78bfa; }
+  .text-input-area::placeholder { color: #3d3d5c; }
+
+  /* Cell table output */
+  .cell-table-wrap {
+    background: #0f0f23;
+    border: 1px solid #2a2a4a;
+    border-radius: 8px;
+    padding: 12px;
+    max-height: 70vh;
+    overflow: auto;
+  }
+  .cell-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 13px;
+  }
+  .cell-table td {
+    border: 1px solid #2a2a4a;
+    padding: 5px 10px;
+    color: #d0d0d0;
+    white-space: pre;
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  .cell-table tr:hover td { background: rgba(167,139,250,0.06); }
+  .cell-table td.row-num {
+    color: #4a4a6a;
+    font-size: 11px;
+    text-align: right;
+    padding: 5px 8px;
+    user-select: none;
+    border-color: #1e1e3a;
+    white-space: nowrap;
+  }
+
+  /* Plain text output for text tab */
+  .text-result-box {
+    background: #0f0f23;
+    border: 1px solid #2a2a4a;
+    border-radius: 8px;
+    padding: 20px;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 70vh;
+    overflow-y: auto;
+    color: #d0d0d0;
+  }
+
+  .text-result-info {
+    font-size: 13px;
+    color: #8888aa;
+    margin-bottom: 8px;
+  }
+
+  .hidden { display: none; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #a78bfa;
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 9999;
+  }
+  .toast.show { opacity: 1; }
+
+  /* highlight slash lines in text tab */
+  .slash-line { background: rgba(167,139,250,0.12); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Premiere Pro XML テロップ抽出 v11</h1>
+
+  <!-- TAB BUTTONS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="text">✏️ テキスト編集</button>
+    <button class="tab-btn" data-tab="xml">📄 XML抽出</button>
+  </div>
+
+  <!-- ===================== UNIFIED OPTIONS ===================== -->
+  <div class="unified-options">
+
+    <!-- 共通オプション（常時表示） -->
+    <div class="opts-grid">
+      <label><input type="checkbox" id="chkDedup"> 重複を省く</label>
+      <label><input type="checkbox" id="chkFullToHalf"> 全角スペースを半角に</label>
+      <label><input type="checkbox" id="chkCollapseSpaces"> 連続スペースを1つに</label>
+    </div>
+
+    <!-- テキスト編集タブ専用 -->
+    <div class="opts-section" id="optsTextOnly">
+      <hr class="opts-divider">
+      <div class="opts-grid">
+        <label><input type="checkbox" id="chkRemoveTimecodes"> タイムコード行を削除</label>
+        <label><input type="checkbox" id="chkCellView"> スペースで区切ってセル表示</label>
+        <label><input type="checkbox" id="chkRemoveSlash"> ／ / を削除</label>
+        <label><input type="checkbox" id="chkOnlySlash"> ／ / がある行のみ表示</label>
+        <label><input type="checkbox" id="chkCollapseBlank"> 連続する空行を1行にまとめる</label>
+      </div>
+    </div>
+
+    <!-- XML抽出タブ専用 -->
+    <div class="opts-section hidden" id="optsXmlOnly">
+      <hr class="opts-divider">
+      <div class="opts-grid">
+        <label><input type="checkbox" id="chkSeqName"> シーケンス名を表示</label>
+        <label><input type="checkbox" id="chkTimecode"> タイムコードを表示</label>
+        <label><input type="checkbox" id="chkBlank"> blank区間を表示</label>
+        <label><input type="checkbox" id="chkHighlightDup"> 重複をハイライト表示</label>
+      </div>
+    </div>
+
+    <!-- 変換（常時表示） -->
+    <hr class="opts-divider">
+    <div class="opts-convert">
+      <span>英数字の変換:</span>
+      <select id="selConvert">
+        <option value="none">変換しない</option>
+        <option value="half">半角に統一</option>
+        <option value="full">全角に統一</option>
+      </select>
+    </div>
+
+  </div><!-- /unified-options -->
+
+  <!-- ===================== TAB: XML ===================== -->
+  <div class="tab-panel" id="tab-xml">
+
+    <div class="drop-zone" id="dropZone">
+      <p>XMLファイルをドラッグ＆ドロップ</p>
+      <p class="sub">またはクリックしてファイルを選択</p>
+      <input type="file" id="fileInput" accept=".xml">
+    </div>
+
+    <div id="resultArea" class="hidden">
+      <div class="result-info" id="resultInfo"></div>
+      <div class="dup-info hidden" id="dupInfo"></div>
+      <div class="actions">
+        <button class="btn-copy" id="btnCopy">コピー</button>
+        <button class="btn-download" id="btnDownload">テキスト保存</button>
+      </div>
+      <div class="result-box" id="resultBox"></div>
+    </div>
+
+  </div><!-- /tab-xml -->
+
+  <!-- ===================== TAB: TEXT ===================== -->
+  <div class="tab-panel active" id="tab-text">
+
+    <div class="text-file-zone" id="textFileZone">
+      <span class="text-file-icon">📂</span>
+      <span class="text-file-label">ファイルをドロップ、またはクリックして選択</span>
+      <span class="text-file-sub">.txt &nbsp;.rtf &nbsp;.docx</span>
+      <input type="file" id="textFileInput" accept=".txt,.rtf,.docx,.doc">
+    </div>
+
+    <textarea
+      class="text-input-area"
+      id="textInput"
+      placeholder="ここにテキストを貼り付けてください…"
+      spellcheck="false"
+    ></textarea>
+
+
+    <div id="textResultArea">
+      <div class="text-result-info" id="textResultInfo"></div>
+      <div class="actions">
+        <button class="btn-copy" id="btnTextCopy">コピー</button>
+        <button class="btn-download" id="btnTextDownload">テキスト保存</button>
+        <button class="btn-clear" id="btnTextClear">クリア</button>
+      </div>
+      <div id="textResultOutput"></div>
+    </div>
+
+  </div><!-- /tab-text -->
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ========================================================
+   TAB SWITCHING
+======================================================== */
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabPanels = document.querySelectorAll('.tab-panel');
+
+const optsTextOnly = document.getElementById('optsTextOnly');
+const optsXmlOnly  = document.getElementById('optsXmlOnly');
+
+function switchTab(target) {
+  tabBtns.forEach(b => b.classList.remove('active'));
+  tabPanels.forEach(p => p.classList.remove('active'));
+  document.querySelector(`[data-tab="${target}"]`).classList.add('active');
+  document.getElementById('tab-' + target).classList.add('active');
+  optsTextOnly.classList.toggle('hidden', target !== 'text');
+  optsXmlOnly.classList.toggle('hidden',  target !== 'xml');
+}
+
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+/* ========================================================
+   TOAST
+======================================================== */
+const toast = document.getElementById('toast');
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+/* ========================================================
+   XML TAB — existing logic (v10)
+======================================================== */
+const PPRO_TICKS_PER_SEC = 254016000000;
+
+const dropZone   = document.getElementById('dropZone');
+const fileInput  = document.getElementById('fileInput');
+const chkSeqName = document.getElementById('chkSeqName');
+const chkTimecode= document.getElementById('chkTimecode');
+const chkBlank   = document.getElementById('chkBlank');
+const chkDedup   = document.getElementById('chkDedup');
+const chkHighlightDup  = document.getElementById('chkHighlightDup');
+const chkFullToHalf    = document.getElementById('chkFullToHalf');
+const chkCollapseSpaces= document.getElementById('chkCollapseSpaces');
+const selConvert = document.getElementById('selConvert');
+const resultArea = document.getElementById('resultArea');
+const resultBox  = document.getElementById('resultBox');
+const resultInfo = document.getElementById('resultInfo');
+const dupInfo    = document.getElementById('dupInfo');
+const btnCopy    = document.getElementById('btnCopy');
+const btnDownload= document.getElementById('btnDownload');
+
+let currentData = null;
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover',  (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) processFile(fileInput.files[0]);
+});
+
+chkSeqName.addEventListener('change', render);
+chkTimecode.addEventListener('change', render);
+chkBlank.addEventListener('change', render);
+chkDedup.addEventListener('change', render);
+chkHighlightDup.addEventListener('change', render);
+chkFullToHalf.addEventListener('change', render);
+chkCollapseSpaces.addEventListener('change', render);
+selConvert.addEventListener('change', render);
+
+btnCopy.addEventListener('click', () => {
+  const text = buildPlainText();
+  navigator.clipboard.writeText(text).then(() => showToast('クリップボードにコピーしました'));
+});
+btnDownload.addEventListener('click', () => {
+  const text = buildPlainText();
+  const bom  = '\uFEFF';
+  const blob = new Blob([bom + text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (currentData ? currentData.seqName : 'output') + '.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      currentData = parseXML(e.target.result);
+      render();
+      resultArea.classList.remove('hidden');
+      resultInfo.textContent = `${currentData.seqName} — ${currentData.clips.length} クリップ検出`;
+    } catch (err) {
+      alert('XMLの解析に失敗しました: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseXML(xmlStr) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlStr, 'text/xml');
+  const seq = doc.querySelector('sequence');
+  if (!seq) throw new Error('sequence要素が見つかりません');
+
+  const seqName = seq.querySelector(':scope > name')?.textContent || 'Untitled';
+  const rateEl  = seq.querySelector(':scope > rate');
+  const timebase = parseInt(rateEl?.querySelector('timebase')?.textContent || '30');
+  const ntsc     = (rateEl?.querySelector('ntsc')?.textContent || 'FALSE').toUpperCase() === 'TRUE';
+  const zeroPointStr = seq.getAttribute('MZ.ZeroPoint') || '0';
+  const zeroPointSeconds = bigTicksToSeconds(zeroPointStr);
+
+  const clips = extractClipsFromSequence(seq);
+  clips.sort((a, b) => a.start - b.start);
+  return { seqName, timebase, ntsc, zeroPointSeconds, clips };
+}
+
+function extractClipsFromSequence(seqEl) {
+  const videoEl = seqEl.querySelector('media > video');
+  if (!videoEl) return [];
+  const clips = [];
+  const trackEls = videoEl.querySelectorAll(':scope > track');
+  for (const track of trackEls) {
+    const children = Array.from(track.children);
+    for (let idx = 0; idx < children.length; idx++) {
+      const child = children[idx];
+      if (child.tagName !== 'clipitem') continue;
+      const ci = child;
+      let ciStart = parseInt(ci.querySelector('start')?.textContent || '0');
+      let ciEnd   = parseInt(ci.querySelector('end')?.textContent || '0');
+      const ciIn  = parseInt(ci.querySelector('in')?.textContent || '0');
+      const ciOut = parseInt(ci.querySelector('out')?.textContent || '0');
+      const ciDur = ciOut - ciIn;
+      if (ciStart === -1) {
+        for (let p = idx - 1; p >= 0; p--) {
+          if (children[p].tagName === 'transitionitem') { ciStart = parseInt(children[p].querySelector('start')?.textContent || '0'); break; }
+          if (children[p].tagName === 'clipitem') break;
+        }
+      }
+      if (ciEnd === -1) {
+        if (ciStart !== -1 && ciDur > 0) { ciEnd = ciStart + ciDur; }
+        else {
+          for (let n = idx + 1; n < children.length; n++) {
+            if (children[n].tagName === 'transitionitem') { ciEnd = parseInt(children[n].querySelector('end')?.textContent || '0'); break; }
+            if (children[n].tagName === 'clipitem') break;
+          }
+        }
+      }
+      if (ciStart === -1 && ciEnd !== -1 && ciDur > 0) ciStart = ciEnd - ciDur;
+      const nestedSeq = ci.querySelector(':scope > sequence');
+      if (nestedSeq) {
+        const nestedClips = extractClipsFromSequence(nestedSeq);
+        for (const nc of nestedClips) {
+          const visStart = Math.max(nc.start, ciIn);
+          const visEnd   = Math.min(nc.end, ciOut);
+          if (visStart >= visEnd) continue;
+          clips.push({ start: ciStart + (visStart - ciIn), end: ciStart + (visEnd - ciIn), text: nc.text });
+        }
+        continue;
+      }
+      const effectEls = ci.querySelectorAll('filter > effect');
+      const graphicEffects = [];
+      for (const ef of effectEls) {
+        if ((ef.querySelector('effectid')?.textContent || '') === 'GraphicAndType') graphicEffects.push(ef);
+      }
+      if (graphicEffects.length === 0) continue;
+      const textParts = [];
+      for (const gfx of graphicEffects) {
+        let name = decodeHtmlEntities((gfx.querySelector(':scope > name')?.textContent || '').trim());
+        if (name === '') name = extractTextFromParam(gfx);
+        if (name !== '') textParts.push(name);
+      }
+      clips.push({ start: ciStart, end: ciEnd, text: textParts.join('\n') });
+    }
+  }
+  return clips;
+}
+
+function extractTextFromParam(effectEl) {
+  try {
+    const params = effectEl.querySelectorAll('parameter');
+    let b64 = '';
+    for (const p of params) {
+      if ((p.querySelector('parameterid')?.textContent || '') === '1') { b64 = (p.querySelector('value')?.textContent || '').trim(); break; }
+    }
+    if (!b64) return '';
+    const bin = atob(b64);
+    const len = bin.length;
+    if (len < 6) return '';
+    if (bin.charCodeAt(len - 1) !== 0) return '';
+    const nullPos = len - 1;
+    for (let textLen = 1; textLen <= nullPos - 4 && textLen < 10000; textLen++) {
+      const p = nullPos - textLen - 4;
+      const readLen = bin.charCodeAt(p) | (bin.charCodeAt(p+1) << 8) | (bin.charCodeAt(p+2) << 16) | (bin.charCodeAt(p+3) << 24);
+      if (readLen === textLen) {
+        const bytes = new Uint8Array(textLen);
+        for (let i = 0; i < textLen; i++) bytes[i] = bin.charCodeAt(p + 4 + i);
+        return new TextDecoder('utf-8').decode(bytes);
+      }
+    }
+    return '';
+  } catch(e) { return ''; }
+}
+
+function bigTicksToSeconds(tickStr) {
+  try {
+    const ticks  = BigInt(tickStr);
+    const perSec = BigInt(PPRO_TICKS_PER_SEC);
+    return Number(ticks / perSec) + Number(ticks % perSec) / PPRO_TICKS_PER_SEC;
+  } catch { return 0; }
+}
+function frameToSeconds(frame, data) {
+  return data.ntsc
+    ? data.zeroPointSeconds + frame * 1001 / (data.timebase * 1000)
+    : data.zeroPointSeconds + frame / data.timebase;
+}
+function formatTimecode(totalSec, timebase) {
+  const totalFrames = Math.round(totalSec * timebase);
+  const ff = totalFrames % timebase;
+  const sec = Math.floor(totalFrames / timebase);
+  return pad2(Math.floor(sec/3600)) + ':' + pad2(Math.floor((sec%3600)/60)) + ':' + pad2(sec%60) + ':' + pad2(ff);
+}
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+function toHalfwidth(str) { return str.replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)); }
+function toFullwidth(str)  { return str.replace(/[!-~]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0xFEE0)); }
+function convertText(str, mode) {
+  if (mode === 'half') return toHalfwidth(str);
+  if (mode === 'full') return toFullwidth(str);
+  return str;
+}
+function applySpaceCleanup(str, fullToHalf, collapse) {
+  if (fullToHalf) str = str.replace(/\u3000/g, ' ');
+  if (collapse)   str = str.replace(/ {2,}/g, ' ');
+  if (fullToHalf || collapse) str = str.replace(/ +$/gm, '');
+  return str;
+}
+function applySpaceCleanupAnnotated(line, fullToHalf, collapse) {
+  let s = line;
+  if (fullToHalf) s = s.replace(/\u3000/g, ' ');
+  if (collapse)   s = s.replace(/ {2,}/g, ' ');
+  if (fullToHalf || collapse) {
+    const trimmed = s.replace(/ +$/, '');
+    return { text: trimmed, hadTrailing: trimmed.length < s.length };
+  }
+  return { text: s, hadTrailing: false };
+}
+function buildEntries() {
+  if (!currentData) return [];
+  const { clips } = currentData;
+  const entries = [];
+  for (let i = 0; i < clips.length; i++) {
+    const clip = clips[i];
+    const prevEnd = i === 0 ? 0 : clips[i-1].end;
+    if (clip.start > prevEnd) entries.push({ start: prevEnd, end: clip.start, text: 'blank', isBlank: true });
+    entries.push({ start: clip.start, end: clip.end, text: clip.text, isBlank: false });
+  }
+  return entries;
+}
+function dedup(entries) {
+  const seen = new Set();
+  return entries.filter(entry => {
+    if (entry.isBlank) return true;
+    const key = entry.text.replace(/\r\n|\r|\n/g, '\n').trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+function findDuplicateKeys(entries) {
+  const countMap = new Map();
+  for (const entry of entries) {
+    if (entry.isBlank) continue;
+    const key = entry.text.replace(/\r\n|\r|\n/g, '\n').trim();
+    countMap.set(key, (countMap.get(key) || 0) + 1);
+  }
+  const dupKeys = new Set();
+  for (const [key, count] of countMap) { if (count >= 2) dupKeys.add(key); }
+  return dupKeys;
+}
+
+function render() {
+  if (!currentData) return;
+  const showTC     = chkTimecode.checked;
+  const showBlank  = chkBlank.checked;
+  const convMode   = selConvert.value;
+  const highlightDup     = chkHighlightDup.checked;
+  const doFullToHalf     = chkFullToHalf.checked;
+  const doCollapse       = chkCollapseSpaces.checked;
+  let entries = buildEntries();
+  const dupKeys = highlightDup ? findDuplicateKeys(entries) : new Set();
+  if (chkDedup.checked) entries = dedup(entries);
+
+  if (highlightDup && dupKeys.size > 0 && !chkDedup.checked) {
+    let total = 0;
+    for (const e of entries) { if (!e.isBlank && dupKeys.has(e.text.replace(/\r\n|\r|\n/g,'\n').trim())) total++; }
+    dupInfo.textContent = `⚠ 重複テキスト: ${dupKeys.size} 種類 (${total} ブロック)`;
+    dupInfo.classList.remove('hidden');
+  } else if (highlightDup && chkDedup.checked) {
+    dupInfo.textContent = '※ 重複ブロック省略中のためハイライトなし';
+    dupInfo.classList.remove('hidden');
+  } else {
+    dupInfo.classList.add('hidden');
+  }
+
+  let html = '\n';
+  if (chkSeqName.checked) html += `<span class="seq-name">${escHtml(currentData.seqName)}</span>\n`;
+
+  for (const entry of entries) {
+    if (entry.isBlank && !showBlank) continue;
+    const isDup = highlightDup && !entry.isBlank && !chkDedup.checked &&
+      dupKeys.has(entry.text.replace(/\r\n|\r|\n/g,'\n').trim());
+    if (isDup) html += `<span class="dup-block">`;
+    if (showTC) {
+      const tcStart = formatTimecode(frameToSeconds(entry.start, currentData), currentData.timebase);
+      const tcEnd   = formatTimecode(frameToSeconds(entry.end,   currentData), currentData.timebase);
+      html += `<span class="timecode">${escHtml(tcStart + ' ~ ' + tcEnd)}</span>\n`;
+    }
+    let text = entry.text;
+    if (!entry.isBlank) text = convertText(text, convMode);
+    const rawLines = text.replace(/\r\n|\r|\n/g, '\n').split('\n');
+    const cls = entry.isBlank ? 'blank' : 'text-line';
+    for (const rawLine of rawLines) {
+      if ((doFullToHalf || doCollapse) && !entry.isBlank) {
+        const { text: cleaned, hadTrailing } = applySpaceCleanupAnnotated(rawLine, doFullToHalf, doCollapse);
+        html += `<span class="${cls}">${escHtml(cleaned)}`;
+        if (hadTrailing) html += `<span class="sp-removed">␣</span>`;
+        html += `</span>\n`;
+      } else {
+        html += `<span class="${cls}">${escHtml(rawLine)}</span>\n`;
+      }
+    }
+    if (isDup) html += `</span>`;
+    html += '\n';
+  }
+  resultBox.innerHTML = html;
+}
+
+function buildPlainText() {
+  if (!currentData) return '';
+  const showTC    = chkTimecode.checked;
+  const showBlank = chkBlank.checked;
+  const convMode  = selConvert.value;
+  const doFTH     = chkFullToHalf.checked;
+  const doCol     = chkCollapseSpaces.checked;
+  let entries = buildEntries();
+  if (chkDedup.checked) entries = dedup(entries);
+  let text = '\n';
+  if (chkSeqName.checked) text += currentData.seqName + '\n';
+  for (const entry of entries) {
+    if (entry.isBlank && !showBlank) continue;
+    if (showTC) {
+      const tcStart = formatTimecode(frameToSeconds(entry.start, currentData), currentData.timebase);
+      const tcEnd   = formatTimecode(frameToSeconds(entry.end,   currentData), currentData.timebase);
+      text += tcStart + ' ~ ' + tcEnd + '\n';
+    }
+    let lines = entry.text.replace(/\r\n|\r|\n/g, '\n');
+    if (!entry.isBlank) lines = convertText(lines, convMode);
+    if ((doFTH || doCol) && !entry.isBlank) lines = applySpaceCleanup(lines, doFTH, doCol);
+    text += lines + '\n\n';
+  }
+  return text;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function decodeHtmlEntities(str) {
+  // 多重エスケープ（&amp;amp;amp;#13; など）に対応するため変化がなくなるまで繰り返す
+  let prev;
+  let guard = 0;
+  do {
+    prev = str;
+    str = str
+      .replace(/&#x([0-9A-Fa-f]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+      .replace(/&#(\d+);/g,            (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g,  '<')
+      .replace(/&gt;/g,  '>');
+  } while (str !== prev && ++guard < 10);
+  return str;
+}
+
+/* ========================================================
+   TEXT EDITOR TAB
+======================================================== */
+const textFileZone  = document.getElementById('textFileZone');
+const textFileInput = document.getElementById('textFileInput');
+const textInput          = document.getElementById('textInput');
+const chkRemoveTimecodes = document.getElementById('chkRemoveTimecodes');
+const chkCellView        = document.getElementById('chkCellView');
+const chkRemoveSlash     = document.getElementById('chkRemoveSlash');
+const chkOnlySlash       = document.getElementById('chkOnlySlash');
+const chkCollapseBlank   = document.getElementById('chkCollapseBlank');
+const textResultInfo     = document.getElementById('textResultInfo');
+const textResultOutput   = document.getElementById('textResultOutput');
+const btnTextCopy        = document.getElementById('btnTextCopy');
+const btnTextDownload    = document.getElementById('btnTextDownload');
+const btnTextClear       = document.getElementById('btnTextClear');
+
+// Timecode detection:
+// Matches lines that consist entirely of digits (full-width or half-width),
+// optionally separated by ：:；;．.-／/ and whitespace.
+// Examples: ０００３  ０１２０  00:03  0:00:03  12;05  0003  etc.
+const TIMECODE_RE = /^[\s　]*[０-９0-9][０-９0-9\s　：:；;．.\-\/／]*$/;
+
+function isTimecodeLine(line) {
+  return TIMECODE_RE.test(line) && /[０-９0-9]/.test(line);
+}
+
+function hasSlash(line) {
+  return /[\/／]/.test(line);
+}
+
+// テキストタブ用の変換ヘルパー
+function applyTextLineConversions(line, fullToHalf, convMode) {
+  if (fullToHalf) line = line.replace(/\u3000/g, ' ');
+  line = convertText(line, convMode);
+  return line;
+}
+
+function dedupLines(lines) {
+  const seen = new Set();
+  return lines.filter(l => {
+    const key = l.trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function processTextInput() {
+  const raw = textInput.value;
+  if (!raw.trim()) {
+    textResultInfo.textContent = '';
+    textResultOutput.innerHTML = '';
+    return;
+  }
+
+  const removeTC      = chkRemoveTimecodes.checked;
+  const cellView      = chkCellView.checked;
+  const rmSlash       = chkRemoveSlash.checked;
+  const onlySlash     = chkOnlySlash.checked;
+  const doCollapseBlank = chkCollapseBlank.checked;
+  const doDedup         = chkDedup.checked;
+  const doFullToHalf    = chkFullToHalf.checked;
+  const doCollapseSpaces= chkCollapseSpaces.checked;
+  const convMode        = selConvert.value;
+
+  // Split into lines
+  let lines = raw.replace(/\r\n|\r/g, '\n').split('\n');
+  const totalOriginal = lines.length;
+
+  // 1. タイムコード行を削除
+  if (removeTC) {
+    lines = lines.filter(l => !isTimecodeLine(l));
+  }
+
+  // 2. ／/がある行のみ表示 (filter before removing slashes)
+  if (onlySlash) {
+    lines = lines.filter(l => hasSlash(l));
+  }
+
+  // 3. ／/を削除
+  if (rmSlash) {
+    lines = lines.map(l => l.replace(/[\/／]/g, ''));
+  }
+
+  // 4. 全角スペース→半角 ＆ 英数字変換 ＆ 連続スペース
+  if (doFullToHalf || convMode !== 'none' || doCollapseSpaces) {
+    lines = lines.map(l => {
+      let s = applyTextLineConversions(l, doFullToHalf, convMode);
+      if (doCollapseSpaces) s = s.replace(/ {2,}/g, ' ').replace(/ +$/,'');
+      return s;
+    });
+  }
+
+  // 5. 連続空行を1行に
+  if (doCollapseBlank) {
+    const collapsed = [];
+    let blankRun = 0;
+    for (const l of lines) {
+      if (l.trim() === '') {
+        blankRun++;
+        if (blankRun === 1) collapsed.push(l);
+      } else {
+        blankRun = 0;
+        collapsed.push(l);
+      }
+    }
+    lines = collapsed;
+  }
+
+  // 6. 重複行を省く (変換後に判定)
+  if (doDedup) {
+    lines = dedupLines(lines);
+  }
+
+  const totalAfter = lines.length;
+  const removed = totalOriginal - totalAfter;
+
+  // Stats
+  let info = `${totalOriginal} 行 → ${totalAfter} 行表示`;
+  if (removed > 0) info += `　(${removed} 行を除去)`;
+  textResultInfo.textContent = info;
+
+  // 6. 出力
+  if (cellView) {
+    renderCellTable(lines);
+  } else {
+    renderPlainResult(lines, onlySlash && !rmSlash);
+  }
+}
+
+function renderPlainResult(lines, highlightSlash) {
+  const div = document.createElement('div');
+  div.className = 'text-result-box';
+
+  if (lines.length === 0) {
+    div.textContent = '（表示する行がありません）';
+    textResultOutput.innerHTML = '';
+    textResultOutput.appendChild(div);
+    return;
+  }
+
+  // Build HTML — highlight slash lines if onlySlash mode without removal
+  let html = '';
+  for (const line of lines) {
+    const cls = highlightSlash && hasSlash(line) ? ' slash-line' : '';
+    html += `<span class="text-line${cls}">${escHtml(line)}</span>\n`;
+  }
+  div.innerHTML = html;
+  textResultOutput.innerHTML = '';
+  textResultOutput.appendChild(div);
+}
+
+function renderCellTable(lines) {
+  if (lines.length === 0) {
+    const div = document.createElement('div');
+    div.className = 'text-result-box';
+    div.textContent = '（表示する行がありません）';
+    textResultOutput.innerHTML = '';
+    textResultOutput.appendChild(div);
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'cell-table-wrap';
+  const table = document.createElement('table');
+  table.className = 'cell-table';
+
+  let rowNum = 1;
+  for (const line of lines) {
+    // Split by half-width or full-width spaces
+    // (全角スペース \u3000 も区切りとして扱う)
+    const cells = line.split(/[ \u3000]+/);
+
+    const tr = document.createElement('tr');
+
+    // Row number
+    const tdNum = document.createElement('td');
+    tdNum.className = 'row-num';
+    tdNum.textContent = rowNum++;
+    tr.appendChild(tdNum);
+
+    if (cells.length === 1 && cells[0] === '') {
+      // empty line — show as single empty cell
+      const td = document.createElement('td');
+      td.textContent = '';
+      tr.appendChild(td);
+    } else {
+      for (const cell of cells) {
+        const td = document.createElement('td');
+        td.textContent = cell;
+        tr.appendChild(td);
+      }
+    }
+    table.appendChild(tr);
+  }
+  wrap.appendChild(table);
+  textResultOutput.innerHTML = '';
+  textResultOutput.appendChild(wrap);
+}
+
+// Build plain text for copy/download (text tab)
+function buildTextPlain() {
+  const raw = textInput.value;
+  if (!raw.trim()) return '';
+
+  const removeTC     = chkRemoveTimecodes.checked;
+  const cellView     = chkCellView.checked;
+  const rmSlash      = chkRemoveSlash.checked;
+  const onlySlash    = chkOnlySlash.checked;
+  const doCollapseBlank  = chkCollapseBlank.checked;
+  const doDedup          = chkDedup.checked;
+  const doFullToHalf     = chkFullToHalf.checked;
+  const doCollapseSpaces = chkCollapseSpaces.checked;
+  const convMode         = selConvert.value;
+
+  let lines = raw.replace(/\r\n|\r/g, '\n').split('\n');
+  if (removeTC)  lines = lines.filter(l => !isTimecodeLine(l));
+  if (onlySlash) lines = lines.filter(l => hasSlash(l));
+  if (rmSlash)   lines = lines.map(l => l.replace(/[\/／]/g, ''));
+  if (doFullToHalf || convMode !== 'none' || doCollapseSpaces) {
+    lines = lines.map(l => {
+      let s = applyTextLineConversions(l, doFullToHalf, convMode);
+      if (doCollapseSpaces) s = s.replace(/ {2,}/g, ' ').replace(/ +$/,'');
+      return s;
+    });
+  }
+  if (doCollapseBlank) {
+    const collapsed = [];
+    let blankRun = 0;
+    for (const l of lines) {
+      if (l.trim() === '') { blankRun++; if (blankRun === 1) collapsed.push(l); }
+      else { blankRun = 0; collapsed.push(l); }
+    }
+    lines = collapsed;
+  }
+  if (doDedup)   lines = dedupLines(lines);
+
+  if (cellView) {
+    // Tab-separated for spreadsheet paste
+    return lines.map(l => l.split(/[ \u3000]+/).join('\t')).join('\n');
+  }
+  return lines.join('\n');
+}
+
+/* ---- File loading for text tab ---- */
+textFileZone.addEventListener('click', () => textFileInput.click());
+textFileZone.addEventListener('dragover', (e) => { e.preventDefault(); textFileZone.classList.add('dragover'); });
+textFileZone.addEventListener('dragleave', () => textFileZone.classList.remove('dragover'));
+textFileZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  textFileZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) loadTextFile(file);
+});
+textFileInput.addEventListener('change', () => {
+  if (textFileInput.files[0]) loadTextFile(textFileInput.files[0]);
+  textFileInput.value = '';
+});
+
+function loadTextFile(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.txt')) {
+    const reader = new FileReader();
+    reader.onload = (e) => { textInput.value = e.target.result; processTextInput(); };
+    reader.readAsText(file, 'UTF-8');
+  } else if (name.endsWith('.rtf')) {
+    const reader = new FileReader();
+    reader.onload = (e) => { textInput.value = rtfToPlainText(e.target.result); processTextInput(); };
+    reader.readAsText(file, 'UTF-8');
+  } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
+    const reader = new FileReader();
+    reader.onload = (e) => loadDocx(e.target.result);
+    reader.readAsArrayBuffer(file);
+  } else {
+    showToast('対応していないファイル形式です');
+  }
+}
+
+/* RTF → プレーンテキスト変換 */
+function rtfToPlainText(rtf) {
+  if (!rtf.trimStart().startsWith('{\\rtf')) return rtf;
+  let s = rtf;
+  // Unicode文字 \uN? → 文字に変換（直後の代替文字は削除）
+  s = s.replace(/\\u(-?\d+)\??/g, (_, n) => {
+    const code = parseInt(n, 10);
+    return String.fromCharCode(code < 0 ? code + 65536 : code);
+  });
+  // \par / \pard / \line → 改行
+  s = s.replace(/\\pard?\b\s*/g, '\n').replace(/\\line\b\s*/g, '\n');
+  // \tab → タブ
+  s = s.replace(/\\tab\b\s*/g, '\t');
+  // 無視すべきグループ（fonttbl, colortbl, stylesheet, info など）を削除
+  s = s.replace(/\{\\(?:fonttbl|colortbl|stylesheet|info|pict|object|header|footer)[^{}]*(?:\{[^{}]*\}[^{}]*)*/g, '');
+  // 残りのコントロールワードを削除
+  s = s.replace(/\\[a-zA-Z]+[-]?\d*\s?/g, '');
+  // エスケープ文字 \{ \} \\ を復元
+  s = s.replace(/\\([{}\\])/g, '$1');
+  // 波括弧を削除
+  s = s.replace(/[{}]/g, '');
+  // 連続改行を整理
+  s = s.replace(/\n{3,}/g, '\n\n').trim();
+  return s;
+}
+
+/* .docx → プレーンテキスト（JSZip を動的ロード） */
+function loadDocx(arrayBuffer) {
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  script.onload = () => {
+    JSZip.loadAsync(arrayBuffer).then(zip => {
+      const xmlFile = zip.file('word/document.xml');
+      if (!xmlFile) { showToast('word/document.xml が見つかりません'); return; }
+      return xmlFile.async('string');
+    }).then(xmlStr => {
+      textInput.value = docxXmlToText(xmlStr);
+      processTextInput();
+    }).catch(err => { showToast('docx の読み込みに失敗しました'); console.error(err); });
+  };
+  script.onerror = () => showToast('JSZip の読み込みに失敗しました（オフライン？）');
+  // 既にロード済みなら再ロードしない
+  if (typeof JSZip !== 'undefined') {
+    script.onload();
+  } else {
+    document.head.appendChild(script);
+  }
+}
+
+function docxXmlToText(xmlStr) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlStr, 'text/xml');
+  const paras = doc.querySelectorAll('p');
+  const lines = [];
+  for (const p of paras) {
+    let line = '';
+    for (const node of p.childNodes) {
+      if (node.nodeName === 'w:r' || node.localName === 'r') {
+        for (const child of node.childNodes) {
+          if (child.localName === 't') line += child.textContent;
+          if (child.localName === 'br') line += '\n';
+        }
+      }
+      if (node.localName === 'hyperlink') {
+        for (const r of node.childNodes) {
+          for (const child of r.childNodes) {
+            if (child.localName === 't') line += child.textContent;
+          }
+        }
+      }
+    }
+    lines.push(line);
+  }
+  return lines.join('\n');
+}
+
+// Event listeners — text tab
+textInput.addEventListener('input', processTextInput);
+[chkRemoveTimecodes, chkCellView, chkRemoveSlash, chkOnlySlash,
+ chkCollapseBlank,
+ // shared (also triggers XML render via its own listeners above)
+ chkDedup, chkFullToHalf, chkCollapseSpaces
+].forEach(el => el.addEventListener('change', processTextInput));
+selConvert.addEventListener('change', processTextInput);
+
+btnTextCopy.addEventListener('click', () => {
+  const text = buildTextPlain();
+  if (!text) { showToast('テキストがありません'); return; }
+  navigator.clipboard.writeText(text).then(() => showToast('クリップボードにコピーしました'));
+});
+
+btnTextDownload.addEventListener('click', () => {
+  const text = buildTextPlain();
+  if (!text) { showToast('テキストがありません'); return; }
+  const bom  = '\uFEFF';
+  const blob = new Blob([bom + text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'telop_edit.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+btnTextClear.addEventListener('click', () => {
+  textInput.value = '';
+  textResultInfo.textContent = '';
+  textResultOutput.innerHTML = '';
+  textInput.focus();
+});
+</script>
+</body>
+</html>

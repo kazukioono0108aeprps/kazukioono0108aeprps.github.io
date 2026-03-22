@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>★kazukiのスクリプト置き場★</title>
+<style>
+/* ===== 90年代スタイル ===== */
+body {
+  background-color: #0a0030;
+  background-image:
+    radial-gradient(circle, #6644aa 1px, transparent 1px),
+    radial-gradient(circle, #334488 1px, transparent 1px);
+  background-size: 30px 30px, 60px 60px;
+  background-position: 0 0, 15px 15px;
+  color: #e8e0ff;
+  font-family: "ＭＳ Ｐゴシック", "MS PGothic", "ＭＳ ゴシック", "MS Gothic", monospace;
+  font-size: 14px;
+  margin: 0;
+  padding: 4px;
+}
+
+/* マーキーアニメ */
+.marquee-wrap {
+  background: #05001a;
+  border-top: 2px solid #44cccc;
+  border-bottom: 2px solid #44cccc;
+  overflow: hidden;
+  padding: 4px 0;
+  white-space: nowrap;
+}
+.marquee-inner {
+  display: inline-block;
+  animation: marquee 18s linear infinite;
+  color: #f0cc44;
+  font-size: 13px;
+  font-weight: bold;
+}
+@keyframes marquee {
+  from { transform: translateX(100vw); }
+  to   { transform: translateX(-100%); }
+}
+
+/* タイトルエリア */
+.title-area {
+  background: linear-gradient(180deg, #aa2299, #220077, #116688);
+  border: 4px outset #8877aa;
+  text-align: center;
+  padding: 10px 4px 6px;
+  margin: 6px 0;
+}
+.site-title-retro {
+  font-size: 28px;
+  font-weight: bold;
+  color: #f0dd55;
+  text-shadow: 3px 3px #cc2244, -1px -1px #44bb66;
+  letter-spacing: 4px;
+  animation: titlecolor 2s steps(1) infinite;
+}
+@keyframes titlecolor {
+  0%   { color: #f0dd55; }
+  25%  { color: #55ddcc; }
+  50%  { color: #dd66cc; }
+  75%  { color: #eeeeff; }
+  100% { color: #f0dd55; }
+}
+.site-subtitle-retro {
+  color: #ffffff;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+/* レインボーライン */
+.rainbow-hr {
+  height: 6px;
+  background: linear-gradient(90deg,
+    #cc3344, #dd7722, #ccbb33, #33aa66,
+    #3399bb, #4455cc, #aa44aa, #cc3344);
+  border: none;
+  margin: 6px 0;
+}
+
+/* キリ番カウンターエリア（共通） */
+.counter-section {
+  background: #08001e;
+  border: 3px inset #5544aa;
+  padding: 8px 12px;
+  margin: 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.counter-label {
+  color: #55ee88;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* メインレイアウト */
+.tools-wrapper {
+  display: table;
+  width: 100%;
+  border-spacing: 0;
+}
+.tools-sidebar {
+  display: table-cell;
+  width: 160px;
+  vertical-align: top;
+  padding-right: 6px;
+}
+.tools-main {
+  display: table-cell;
+  vertical-align: top;
+}
+
+/* サイドバー */
+.sidebar-box {
+  background: #0d0033;
+  border: 3px outset #7766aa;
+  padding: 6px;
+  margin-bottom: 6px;
+}
+.sidebar-title {
+  background: #05001a;
+  color: #eedd55;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border: 1px solid #998833;
+  margin-bottom: 6px;
+  text-align: center;
+}
+.sidebar-link {
+  display: block;
+  color: #77ddcc;
+  text-decoration: none;
+  font-size: 12px;
+  padding: 2px 0;
+  border-bottom: 1px dotted #332266;
+}
+.sidebar-link:hover {
+  background: #220066;
+  color: #eeeeff;
+  text-decoration: underline;
+}
+.sidebar-link::before {
+  content: "▶ ";
+  color: #cc55bb;
+}
+.sidebar-link.current {
+  background: #330066;
+  color: #ffff44;
+  font-weight: bold;
+  border-bottom: 1px dotted #886600;
+}
+.sidebar-link.current::before {
+  content: "★ ";
+  color: #ffcc00;
+}
+
+/* 未完成リンク */
+.wip-link {
+  display: block;
+  color: #555577;
+  font-size: 12px;
+  padding: 2px 0;
+  border-bottom: 1px dotted #332266;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  pointer-events: none;
+}
+.wip-link::before {
+  content: "▶ ";
+  color: #443355;
+}
+
+.new-badge {
+  display: inline;
+  background: #bb2233;
+  color: #ffeecc;
+  font-size: 9px;
+  font-weight: bold;
+  padding: 1px 3px;
+  border: 1px solid #ee9933;
+  vertical-align: middle;
+  animation: blink-text 0.6s step-end infinite;
+}
+@keyframes blink-text {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ページタイトル */
+.page-title-bar {
+  background: linear-gradient(90deg, #330055, #110033);
+  border: 3px outset #9944aa;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.page-title-txt {
+  color: #ee88ff;
+  font-size: 16px;
+  font-weight: bold;
+  text-shadow: 2px 2px #660088;
+  letter-spacing: 2px;
+}
+.page-title-sub {
+  color: #bb88cc;
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+/* スクリプトカード */
+.script-row {
+  background: #0a0028;
+  border: 2px outset #6655aa;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: stretch;
+  border-bottom: 3px outset #7766bb;
+}
+.script-icon-cell {
+  background: #100044;
+  border-right: 2px inset #332266;
+  padding: 10px 12px;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+}
+.script-info-cell {
+  padding: 8px 10px;
+  flex: 1;
+}
+.script-name-retro {
+  color: #eedd55;
+  font-size: 15px;
+  font-weight: bold;
+  text-shadow: 1px 1px #bb6600;
+}
+.script-tag-retro {
+  display: inline;
+  background: #660055;
+  color: #ffccee;
+  font-size: 9px;
+  padding: 1px 4px;
+  border: 1px solid #cc55aa;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.price-badge-free {
+  display: inline;
+  background: #115511;
+  color: #88ffaa;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 1px 6px;
+  border: 1px solid #44aa66;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.price-badge-paid {
+  display: inline;
+  background: #553300;
+  color: #ffcc55;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 1px 6px;
+  border: 1px solid #bb7722;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.script-desc-retro {
+  color: #aaaadd;
+  font-size: 12px;
+  margin-top: 4px;
+  line-height: 1.6;
+}
+.script-btn-area {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.booth-btn {
+  background: #551100;
+  border: 3px outset #aa4422;
+  color: #ffccaa;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 3px 12px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.booth-btn:hover {
+  background: #882200;
+  color: #ffeecc;
+}
+.booth-btn:active {
+  border-style: inset;
+}
+.booth-btn-free {
+  background: #115511;
+  border: 3px outset #336633;
+  color: #ccffcc;
+}
+.booth-btn-free:hover {
+  background: #226622;
+  color: #eeffaa;
+}
+.booth-btn.wip {
+  background: #1a1a22;
+  border: 3px outset #333344;
+  color: #555566;
+  cursor: not-allowed;
+  pointer-events: none;
+  text-decoration: line-through;
+}
+.compat-tag {
+  font-size: 10px;
+  color: #778899;
+  background: #0a0020;
+  border: 1px solid #334455;
+  padding: 1px 5px;
+  display: inline-block;
+}
+
+/* 光るテキスト */
+.glow {
+  animation: glow-anim 1.5s ease-in-out infinite;
+}
+@keyframes glow-anim {
+  0%,100% { text-shadow: 0 0 4px #44aaaa, 0 0 8px #44aaaa; }
+  50%      { text-shadow: 0 0 10px #aa44aa, 0 0 18px #aa44aa; }
+}
+
+/* フッター */
+.footer-area {
+  text-align: center;
+  padding: 8px 4px 4px;
+  border-top: 4px double #448899;
+  margin-top: 8px;
+}
+.footer-txt {
+  color: #7777aa;
+  font-size: 10px;
+  line-height: 1.8;
+}
+.footer-txt a {
+  color: #5599cc;
+}
+.best-viewed {
+  color: #ccbb44;
+  font-size: 10px;
+  border: 1px solid #887722;
+  display: inline-block;
+  padding: 1px 6px;
+  margin-top: 4px;
+}
+</style>
+</head>
+<body>
+
+<!-- ★ マーキー ★ -->
+<div class="marquee-wrap">
+  <span class="marquee-inner">
+    ★★★ kazukiのスクリプト置き場へようこそ！★★★　　　Photoshop用自作スクリプトを無料・有料にて配布中！　　　BOOTHにてDLできます　　　最終更新：2026年3月
+  </span>
+</div>
+
+<!-- ★ タイトル ★ -->
+<div class="title-area">
+  <div class="site-title-retro">★ My Scripts ★</div>
+  <div class="site-subtitle-retro">〜 kazukiの自作スクリプト置き場 〜</div>
+  <div style="font-size:11px; color:#ffff88; margin-top:4px;">
+    ＊Photoshop用スクリプトをBOOTHにて配布しています＊
+  </div>
+</div>
+
+<div class="rainbow-hr"></div>
+
+<!-- ★ メインレイアウト ★ -->
+<div class="tools-wrapper">
+
+  <!-- サイドバー -->
+  <div class="tools-sidebar">
+    <div class="sidebar-box">
+      <div class="sidebar-title">■ MENU ■</div>
+      <a href="index.html" class="sidebar-link">TOP</a>
+      <a href="index.html" class="sidebar-link">ツール一覧</a>
+      <a href="scripts.html" class="sidebar-link current">スクリプト集 <span class="new-badge">NEW</span></a>
+      <span class="wip-link">更新履歴</span>
+      <span class="wip-link">掲示板(BBS)</span>
+      <span class="wip-link">自己紹介</span>
+      <span class="wip-link">リンク集</span>
+      <span class="wip-link">メール</span>
+    </div>
+    <div class="sidebar-box" style="font-size:10px; color:#ffff88; line-height:1.8;">
+      <div class="sidebar-title">■ INFO ■</div>
+      <div>管理人：kazuki</div>
+      <div>開設：2026/03</div>
+      <div>スクリプト数：1本</div>
+      <div style="margin-top:4px; color:#ffccaa;">BOOTHで配布中！</div>
+      <div style="margin-top:4px; color:#ff8888;">＊無断転載禁止＊</div>
+    </div>
+    <div class="sidebar-box" style="font-size:10px; color:#ccbbff; line-height:1.8;">
+      <div class="sidebar-title">■ 対応環境 ■</div>
+      <div>Photoshop</div>
+      <div>CC 2019以降</div>
+      <div>Win / Mac</div>
+    </div>
+  </div>
+
+  <!-- メインコンテンツ -->
+  <div class="tools-main">
+
+    <!-- ページタイトル -->
+    <div class="page-title-bar">
+      <span style="font-size:20px;">📜</span>
+      <div>
+        <div class="page-title-txt">自作スクリプト集</div>
+        <div class="page-title-sub">Photoshop用スクリプトをBOOTHにて配布しています。ご自由にお使いください！</div>
+      </div>
+    </div>
+
+    <!-- ─────── スクリプト一覧 ─────── -->
+
+    <!-- Script 1 -->
+    <div class="script-row">
+      <div class="script-icon-cell">🖼️</div>
+      <div class="script-info-cell">
+        <div class="script-name-retro">
+          スクリプト名をここに入力
+          <span class="script-tag-retro">Photoshop</span>
+          <span class="price-badge-free">無料</span>
+          <span class="new-badge">NEW</span>
+        </div>
+        <div style="margin-top:4px;">
+          <span class="compat-tag">Photoshop CC 2019+</span>
+          <span class="compat-tag">Win / Mac</span>
+        </div>
+        <div class="script-desc-retro">
+          スクリプトの説明をここに入力してください。<br>
+          何ができるのか、どんな時に使うと便利かを書きましょう。
+        </div>
+        <div class="script-btn-area">
+          <a href="https://booth.pm/" target="_blank" class="booth-btn booth-btn-free">🛒 BOOTHで無料DL</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ここにスクリプトを追加していく -->
+
+  </div><!-- /.tools-main -->
+</div><!-- /.tools-wrapper -->
+
+<div class="rainbow-hr"></div>
+
+<!-- フッター -->
+<div class="footer-area">
+  <div class="glow" style="color:#00ffff; font-size:13px; font-weight:bold; margin-bottom:4px;">
+    ★ ご来訪ありがとうございました ★
+  </div>
+  <div class="footer-txt">
+    Copyright &copy; 2026 kazuki All Rights Reserved.<br>
+    当サイトへのリンクはご自由にどうぞ。スクリプトの再配布・改変は禁止です。<br>
+    <a href="#">管理人へメール</a> ／ <a href="#">掲示板(BBS)</a>
+  </div>
+  <div class="best-viewed">★ Netscape Navigator 4.x / IE 4.x 推奨 解像度800×600以上 ★</div>
+</div>
+
+</body>
+</html>

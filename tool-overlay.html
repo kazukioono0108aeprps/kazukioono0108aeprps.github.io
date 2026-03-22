@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>表ジェネレーター</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ag-psd/dist/bundle.js"></script>
+<style>
+/* ════════════════════════════════════════
+   CSS VARIABLES / THEMES
+   ════════════════════════════════════════ */
+:root,[data-theme="purple"]{
+  --bg:#12121f;--panel:#1a1a30;--section:#0e0e22;--border:#2a2a50;
+  --accent:#ff4466;--accent-faint:rgba(255,68,102,.18);
+  --text:#eee;--subtext:#aaa;--dim:#555;--hover:#16163a;
+  --input-bg:#12121f;--item-bg:#12121f;
+  --preview-bg:#0a0a15;--checker1:#202030;--checker2:#161626;
+  --fp-dd-bg:#1c1c30;--fp-dd-border:#3a3a60;
+  --fp-item-hover:#252548;--fp-sec-bg:#0e0e22;--fp-item-border:#14142a;
+  --btn-sec:#2a2a50;--btn-sec-text:#eee;--scrollbar:#2a2a50;
+}
+[data-theme="cyan"]{
+  --bg:#0a1520;--panel:#0d1e2d;--section:#061018;--border:#1a3a50;
+  --accent:#00c8ff;--accent-faint:rgba(0,200,255,.18);
+  --text:#e0f0ff;--subtext:#80a0b0;--dim:#3a6070;--hover:#102030;
+  --input-bg:#061018;--item-bg:#061018;
+  --preview-bg:#040c14;--checker1:#0d1520;--checker2:#061015;
+  --fp-dd-bg:#0d1e2d;--fp-dd-border:#1a3a50;
+  --fp-item-hover:#102840;--fp-sec-bg:#061018;--fp-item-border:#0d1a25;
+  --btn-sec:#1a3a50;--btn-sec-text:#e0f0ff;--scrollbar:#1a3a50;
+}
+[data-theme="white"]{
+  --bg:#f0f0f5;--panel:#ffffff;--section:#f5f5fa;--border:#ccccdd;
+  --accent:#4466ff;--accent-faint:rgba(68,102,255,.12);
+  --text:#222233;--subtext:#667788;--dim:#9999bb;--hover:#eeeef8;
+  --input-bg:#ffffff;--item-bg:#f5f5fa;
+  --preview-bg:#e0e0e8;--checker1:#d8d8e0;--checker2:#c8c8d0;
+  --fp-dd-bg:#ffffff;--fp-dd-border:#ccccdd;
+  --fp-item-hover:#eeeeff;--fp-sec-bg:#f0f0f8;--fp-item-border:#e0e0ee;
+  --btn-sec:#ddddee;--btn-sec-text:#333344;--scrollbar:#ccccdd;
+}
+[data-theme="matrix"]{
+  --bg:#000800;--panel:#001200;--section:#000a00;--border:#005500;
+  --accent:#00ff44;--accent-faint:rgba(0,255,68,.15);
+  --text:#00dd33;--subtext:#009922;--dim:#004d14;--hover:#001800;
+  --input-bg:#000800;--item-bg:#000800;
+  --preview-bg:#000400;--checker1:#000d00;--checker2:#000800;
+  --fp-dd-bg:#001200;--fp-dd-border:#005500;
+  --fp-item-hover:#001a00;--fp-sec-bg:#000a00;--fp-item-border:#001000;
+  --btn-sec:#003300;--btn-sec-text:#00dd33;--scrollbar:#005500;
+}
+[data-theme="dark"]{
+  --bg:#111;--panel:#1c1c1c;--section:#0d0d0d;--border:#333;
+  --accent:#aaa;--accent-faint:rgba(170,170,170,.15);
+  --text:#e0e0e0;--subtext:#888;--dim:#555;--hover:#222;
+  --input-bg:#111;--item-bg:#111;
+  --preview-bg:#080808;--checker1:#1a1a1a;--checker2:#141414;
+  --fp-dd-bg:#1c1c1c;--fp-dd-border:#333;
+  --fp-item-hover:#252525;--fp-sec-bg:#0d0d0d;--fp-item-border:#1a1a1a;
+  --btn-sec:#333;--btn-sec-text:#e0e0e0;--scrollbar:#333;
+}
+
+/* ════════════════════════════════════════
+   BASE
+   ════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+header{background:var(--panel);padding:10px 18px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
+header h1{font-size:15px;color:var(--accent);font-weight:900;}
+.main{display:flex;flex:1;overflow:hidden;}
+
+/* ─── SETTINGS ─── */
+.settings{width:320px;background:var(--panel);overflow-y:auto;border-right:2px solid var(--border);flex-shrink:0;padding:8px 8px 20px;}
+
+/* ─── ACCORDION ─── */
+.section{background:var(--section);border-radius:8px;margin-bottom:6px;border:1px solid var(--border);overflow:hidden;}
+.sec-hd{display:flex;align-items:center;padding:9px 12px;cursor:pointer;user-select:none;gap:6px;}
+.sec-hd:hover{background:var(--hover);}
+.sec-hd h3{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1.2px;font-weight:700;flex:1;margin:0;}
+.sec-arrow{color:var(--dim);font-size:10px;transition:transform .22s;flex-shrink:0;}
+.sec-closed .sec-arrow{transform:rotate(-90deg);}
+.sec-body{overflow:hidden;transition:max-height .26s ease,opacity .22s ease;}
+.sec-body-inner{padding:0 12px 10px;max-height:380px;overflow-y:auto;}
+.sec-closed .sec-body{max-height:0!important;opacity:0;}
+
+/* ─── FORM ─── */
+label{display:block;font-size:11px;color:var(--subtext);margin-bottom:3px;margin-top:7px;}
+label:first-child{margin-top:0;}
+input[type=text],input[type=number],select{width:100%;padding:5px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;outline:none;}
+input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--accent);}
+input[type=color]{width:36px;height:26px;padding:1px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;cursor:pointer;}
+input[type=range]{width:100%;accent-color:var(--accent);}
+input[type=checkbox]{accent-color:var(--accent);cursor:pointer;width:13px;height:13px;}
+select{cursor:pointer;}
+.fi{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px;}
+.fi .f{flex:1;min-width:56px;}
+.sep{height:1px;background:var(--border);margin:8px 0;}
+.tip{font-size:10px;color:var(--dim);margin-top:4px;line-height:1.4;}
+.row{display:flex;gap:8px;align-items:center;}
+
+/* ─── BUTTONS ─── */
+.btn{padding:5px 10px;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;transition:opacity .15s;}
+.btn:hover{opacity:.82;}
+.btn-success{background:#22bb66;color:#fff;}
+.btn-secondary{background:var(--btn-sec);color:var(--btn-sec-text);}
+.btn-danger{background:#cc3344;color:#fff;}
+.btn-sm{padding:3px 7px;font-size:11px;}
+.badge{display:inline-block;background:var(--accent);color:#fff;font-size:9px;border-radius:10px;padding:1px 5px;margin-left:3px;}
+.upload-area{border:2px dashed var(--border);border-radius:6px;padding:10px;text-align:center;cursor:pointer;transition:border-color .2s;}
+.upload-area:hover{border-color:var(--accent);}
+.col-item,.row-item{background:var(--item-bg);border-radius:4px;padding:6px 8px;margin-bottom:5px;display:flex;gap:5px;align-items:flex-start;border:1px solid var(--border);}
+.col-item{align-items:center;}
+.col-item input,.row-item input{flex:1;min-width:0;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:3px;}
+
+/* ─── FONT PICKER ─── */
+.fp-wrap{position:relative;}
+.fp-row{display:flex;gap:4px;align-items:center;}
+.fp-cur{flex:1;padding:5px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;outline:none;}
+.fp-cur:hover{border-color:var(--accent);}
+.fp-preview-line{font-size:11px;color:var(--dim);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:17px;}
+.fp-dd{position:fixed;background:var(--fp-dd-bg);border:1px solid var(--fp-dd-border);border-radius:7px;z-index:9999;display:none;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.85);max-height:520px;min-width:280px;}
+.fp-dd.open{display:flex;}
+.fp-srch-row{padding:7px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.fp-srch-row input{width:100%;padding:4px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;outline:none;}
+.fp-list{overflow-y:auto;flex:1;min-height:0;}
+.fp-sec-lbl{font-size:10px;color:var(--dim);padding:5px 10px 3px;text-transform:uppercase;letter-spacing:1px;background:var(--fp-sec-bg);position:sticky;top:0;z-index:1;}
+.fp-item{display:flex;align-items:center;padding:4px 10px;cursor:pointer;gap:7px;border-bottom:1px solid var(--fp-item-border);}
+.fp-item:hover{background:var(--fp-item-hover);}
+.fp-item.sel{background:var(--accent-faint);}
+.fp-fname{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
+.fp-star{background:none;border:none;cursor:pointer;font-size:14px;padding:0;line-height:1;color:var(--border);flex-shrink:0;transition:color .1s;}
+.fp-star.on{color:#ffcc00;}
+.fp-star:hover{color:#ffcc00;}
+.fp-load-btn{padding:5px 9px;border:1px dashed var(--border);border-radius:5px;background:none;color:var(--subtext);font-size:11px;cursor:pointer;width:100%;text-align:center;}
+.fp-load-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ─── PREVIEW ─── */
+.preview-panel{flex:1;display:flex;flex-direction:column;background:var(--preview-bg);overflow:hidden;position:relative;}
+.preview-toolbar{width:100%;display:flex;align-items:center;gap:6px;padding:6px 10px;flex-shrink:0;justify-content:flex-end;border-bottom:1px solid var(--panel);}
+#preview-container{flex:1;position:relative;overflow:hidden;cursor:grab;user-select:none;}
+#preview-container.dragging{cursor:grabbing;}
+#ov-canvas{width:1920px;height:1080px;position:absolute;top:0;left:0;transform-origin:0 0;}
+#ov-checker{position:absolute;inset:0;background:repeating-conic-gradient(var(--checker1) 0% 25%,var(--checker2) 0% 50%) 0 0/20px 20px;}
+#safe-overlay{position:absolute;border:2px dashed rgba(0,220,200,.55);pointer-events:none;transition:all .2s;}
+#safe-label{position:absolute;font-size:13px;color:rgba(0,220,200,.55);pointer-events:none;padding:2px 5px;font-weight:700;top:0;left:0;}
+#ov-root{position:absolute;}
+#gfx-wrap{display:inline-block;}
+.pos-btn{padding:6px 4px;border:1px solid var(--border);border-radius:4px;background:var(--input-bg);color:var(--dim);font-size:11px;cursor:pointer;text-align:center;transition:all .15s;width:100%;}
+.pos-btn:hover{border-color:var(--accent);color:var(--text);}
+.pos-btn.active{border-color:var(--accent);background:var(--accent-faint);color:var(--accent);font-weight:700;}
+
+/* ─── THEME BUTTONS ─── */
+.theme-btn{padding:3px 6px;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:14px;background:transparent;transition:all .15s;line-height:1;color:var(--text);}
+.theme-btn:hover{border-color:var(--accent);}
+.theme-btn.active{border-color:var(--accent);background:var(--accent-faint);}
+
+/* ─── EMPH (per-cell color override) ─── */
+.emph-row{display:flex;align-items:center;gap:3px;margin-top:3px;}
+.emph-row input[type=checkbox]{width:11px;height:11px;flex-shrink:0;accent-color:#ff8800;cursor:pointer;}
+.emph-row input[type=color]{width:16px;height:16px;padding:0;border:1px solid var(--border);border-radius:2px;cursor:pointer;flex-shrink:0;}
+
+/* ─── HEX COLOR INPUT ─── */
+.hex-wrap{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;}
+.hex-inp{
+  display:inline-block;
+  width:68px;font-size:11px;padding:2px 4px;
+  font-family:'Courier New',monospace;letter-spacing:.5px;
+  background:var(--input-bg);border:1px solid var(--border);border-radius:3px;
+  color:var(--text);outline:none;
+}
+.hex-inp:focus{border-color:var(--accent);}
+.hex-inp:disabled{opacity:.45;cursor:not-allowed;}
+
+/* ─── PREVIEW TOOLBAR TEXT ─── */
+.ptb-hint{font-size:10px;color:var(--dim);margin-left:6px;}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:20px">⚾</span>
+  <h1>表ジェネレーター</h1>
+
+  <!-- Theme switcher -->
+  <div style="display:flex;align-items:center;gap:4px;background:var(--section);border:1px solid var(--border);border-radius:5px;padding:3px 8px;">
+    <span style="font-size:10px;color:var(--dim);white-space:nowrap;">テーマ</span>
+    <button class="theme-btn active" data-theme="purple"  onclick="setTheme('purple')"  title="紫">🟣</button>
+    <button class="theme-btn"        data-theme="cyan"    onclick="setTheme('cyan')"    title="水色">🔵</button>
+    <button class="theme-btn"        data-theme="white"   onclick="setTheme('white')"   title="白っぽい">⬜</button>
+    <button class="theme-btn"        data-theme="matrix"  onclick="setTheme('matrix')"  title="マトリックス緑">🟢</button>
+    <button class="theme-btn"        data-theme="dark"    onclick="setTheme('dark')"    title="ダーク">⬛</button>
+  </div>
+
+  <!-- Undo / Redo -->
+  <div style="display:flex;gap:3px;">
+    <button class="btn btn-secondary btn-sm" id="btn-undo" onclick="undo()" title="元に戻す (Ctrl+Z)" disabled>↩ Undo</button>
+    <button class="btn btn-secondary btn-sm" id="btn-redo" onclick="redo()" title="やり直す (Ctrl+Y)" disabled>↪ Redo</button>
+  </div>
+
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <button class="btn btn-secondary" onclick="saveStyle()" title="設定をtxtファイルに保存">💾 スタイル保存</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('style-file').click()" title="設定ファイルを読み込む">📂 スタイル読込</button>
+    <input type="file" id="style-file" accept=".txt,.json" style="display:none" onchange="loadStyle(this)">
+    <div style="display:flex;align-items:center;gap:4px;background:var(--section);border:1px solid var(--border);border-radius:5px;padding:3px 8px;">
+      <span style="font-size:10px;color:var(--dim);white-space:nowrap;">保存名</span>
+      <input type="text" id="export-name" value="overlay" style="width:110px;background:transparent;border:none;color:var(--text);font-size:12px;outline:none;" placeholder="ファイル名">
+    </div>
+    <button class="btn btn-success" onclick="exportPNG()">📥 1920×1080 書き出し</button>
+    <button class="btn btn-psd" onclick="exportPSD()" title="Photoshop用レイヤー分けPSDを書き出す" style="background:#4a2a7a;color:#e0b0ff;border:1px solid #7a4aaa;border-radius:5px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;">🖼 PSD書き出し</button>
+  </div>
+</header>
+
+<div class="main">
+
+<!-- ════ SETTINGS ════ -->
+<div class="settings" id="settings">
+
+  <!-- Excel Import -->
+  <div class="section" id="sec-excel">
+    <div class="sec-hd" onclick="toggleSec('excel')"><h3>📊 Excel / CSV インポート</h3><span class="sec-arrow">▼</span></div>
+    <div class="sec-body" style="max-height:420px;">
+      <div class="sec-body-inner">
+        <div class="upload-area" onclick="document.getElementById('xl-file').click()">
+          <div style="font-size:22px">📂</div>
+          <div style="font-size:13px;font-weight:700;margin-top:2px">ファイルを選択</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:2px">.xlsx / .xls / .csv 対応</div>
+        </div>
+        <input type="file" id="xl-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcel(this)">
+        <p class="tip">※ 1行目=列ヘッダー、2行目以降=データ行</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <div class="section" id="sec-title">
+    <div class="sec-hd" onclick="toggleSec('title')"><h3>🏷️ タイトル</h3><span class="sec-arrow">▼</span></div>
+    <div class="sec-body" style="max-height:420px;">
+      <div class="sec-body-inner">
+        <label>テキスト <span style="font-size:9px;color:var(--dim);">（Shift+Enterで改行）</span></label>
+        <textarea id="tt" rows="2" oninput="rp()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();}" style="resize:vertical;line-height:1.5;font-family:inherit;width:100%;padding:5px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;outline:none;">エクセル1行目</textarea>
+        <div class="sep"></div>
+        <label>フォント</label>
+        <div class="fp-wrap" id="fp-wrap-title">
+          <div class="fp-row">
+            <button class="fp-cur" id="fp-cur-title" onclick="openFp('title')">Impact</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadSysFonts()" title="システムフォントを読み込む">🖥️ 読込</button>
+          </div>
+          <div class="fp-preview-line" id="fp-prev-title" style="font-family:'Impact','Arial Black',sans-serif;">ABCabc 安打内訳</div>
+          <div class="fp-dd" id="fp-dd-title">
+            <div class="fp-srch-row"><input type="text" id="fp-srch-title" placeholder="フォントを検索..." oninput="filterFp('title',this.value)"></div>
+            <div class="fp-list" id="fp-list-title"></div>
+          </div>
+        </div>
+        <div class="fi">
+          <div class="f"><label>サイズ</label><input type="number" id="tfs" value="38" min="10" max="120" oninput="rp()"></div>
+          <div class="f"><label>文字色①</label><input type="color" id="tc" value="#ff2222" oninput="rp()"></div>
+          <div class="f"><label>縁取り色</label><input type="color" id="tsc" value="#ffffff" oninput="rp()"></div>
+          <div class="f"><label>縁取り幅</label><input type="number" id="tsw" value="4" min="0" max="20" oninput="rp()"></div>
+        </div>
+        <div style="display:flex;gap:14px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+          <label style="font-size:11px;display:flex;align-items:center;gap:5px;">フォントの太さ
+            <select id="tfw-title" onchange="rp()" style="font-size:11px;background:var(--input-bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 5px;outline:none;">
+              <option value="100">01 Thin</option>
+              <option value="200">02 ExtraLight</option>
+              <option value="300">03 Light</option>
+              <option value="400">04 Regular</option>
+              <option value="500">05 Medium</option>
+              <option value="600">06 SemiBold</option>
+              <option value="700">07 Bold</option>
+              <option value="800">08 ExtraBold</option>
+              <option value="900" selected>09 Black</option>
+            </select>
+          </label>
+          <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" id="tital" checked onchange="rp()"> イタリック
+          </label>
+        </div>
+        <div class="sep"></div>
+        <!-- ── 2色目 ── -->
+        <label style="display:flex;align-items:center;gap:6px;margin-top:0;">
+          <input type="checkbox" id="tc2-en" onchange="rp()"> タイトル2色を使用
+        </label>
+        <div class="fi" style="margin-top:6px;">
+          <div class="f"><label>文字色②</label><input type="color" id="tc2" value="#ffff00" oninput="rp()"></div>
+          <div class="f">
+            <label>前半文字数</label>
+            <input type="number" id="tc2-pos" value="2" min="1" max="50" oninput="rp()" title="先頭からこの文字数が①色、残りが②色">
+          </div>
+        </div>
+        <div style="text-align:right;margin-top:5px;">
+          <button class="btn btn-secondary btn-sm" onclick="swapTitleColors()" title="文字色①と文字色②を入れ替える">⇄ 文字色 ①↔②</button>
+        </div>
+        <p class="tip">例：テキスト「安打内訳」、前半2文字→「安打」=①色、「内訳」=②色</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Style -->
+  <div class="section sec-closed" id="sec-table">
+    <div class="sec-hd" onclick="toggleSec('table')"><h3>🎨 テーブルスタイル</h3><span class="sec-arrow">▼</span></div>
+    <div class="sec-body" style="max-height:0;opacity:0;">
+      <div class="sec-body-inner">
+        <label>テーブルフォント</label>
+        <div class="fp-wrap" id="fp-wrap-table">
+          <div class="fp-row">
+            <button class="fp-cur" id="fp-cur-table" onclick="openFp('table')">游ゴシック</button>
+          </div>
+          <div class="fp-preview-line" id="fp-prev-table" style="font-family:'Yu Gothic',sans-serif;">ABCabc 安打内訳</div>
+          <div class="fp-dd" id="fp-dd-table">
+            <div class="fp-srch-row"><input type="text" id="fp-srch-table" placeholder="フォントを検索..." oninput="filterFp('table',this.value)"></div>
+            <div class="fp-list" id="fp-list-table"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;margin-top:6px;align-items:center;flex-wrap:wrap;">
+          <label style="font-size:11px;display:flex;align-items:center;gap:5px;">フォントの太さ
+            <select id="tfw-t" onchange="rp()" style="font-size:11px;background:var(--input-bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 5px;outline:none;">
+              <option value="100">01 Thin</option>
+              <option value="200">02 ExtraLight</option>
+              <option value="300">03 Light</option>
+              <option value="400">04 Regular</option>
+              <option value="500">05 Medium</option>
+              <option value="600">06 SemiBold</option>
+              <option value="700" selected>07 Bold</option>
+              <option value="800">08 ExtraBold</option>
+              <option value="900">09 Black</option>
+            </select>
+          </label>
+          <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" id="tital-t" onchange="rp()"> 斜体
+          </label>
+        </div>
+        <div class="sep"></div>
+        <div class="fi">
+          <div class="f"><label>ヘッダー背景</label><input type="color" id="hbg" value="#222222" oninput="syncLcbg();rp()"></div>
+          <div class="f"><label>ヘッダー文字色</label><input type="color" id="htc" value="#ffffff" oninput="rp()"></div>
+        </div>
+        <div class="fi">
+          <div class="f"><label>データ背景</label><input type="color" id="dbg" value="#111111" oninput="rp()"></div>
+          <div class="f"><label>データ文字色</label><input type="color" id="dtc" value="#ffffff" oninput="rp()"></div>
+        </div>
+        <div class="fi">
+          <div class="f"><label>枠線色</label><input type="color" id="bc" value="#ffffff" oninput="rp()"></div>
+          <div class="f"><label>枠線幅</label><input type="number" id="bw" value="2" min="1" max="10" oninput="rp()"></div>
+        </div>
+        <div class="sep"></div>
+        <div class="fi">
+          <div class="f"><label>ヘッダーfont</label><input type="number" id="hfs" value="28" min="8" max="80" oninput="rp()"></div>
+          <div class="f"><label>データfont</label><input type="number" id="dfs" value="34" min="8" max="80" oninput="rp()"></div>
+          <div class="f"><label>末尾文字font</label><input type="number" id="sfx-fs" value="20" min="6" max="60" oninput="rp()" title="各列の末尾文字（単位など）のフォントサイズ"></div>
+        </div>
+        <div class="fi">
+          <div class="f"><label>セル幅(px)</label><input type="number" id="cw" value="92" min="30" max="400" oninput="rp()"></div>
+          <div class="f"><label>セル高(px)</label><input type="number" id="ch" value="58" min="20" max="200" oninput="rp()"></div>
+          <div class="f"><label>角丸(px)</label><input type="number" id="cr" value="0" min="0" max="30" oninput="rp()"></div>
+        </div>
+        <div class="sep"></div>
+        <label>先頭列スタイル</label>
+        <select id="fcs" onchange="rp()">
+          <option value="normal">通常（他の列と同じ）</option>
+          <option value="label">ラベル列（別背景色）</option>
+        </select>
+        <div id="lc-row" style="display:none;margin-top:5px;">
+          <label style="margin-bottom:5px;display:flex;align-items:center;gap:5px;">
+            <input type="checkbox" id="lcbg-sync" onchange="syncLcbg()"> ヘッダー背景と同じ
+          </label>
+          <div class="fi">
+            <div class="f"><label>ラベル列背景</label><input type="color" id="lcbg" value="#333333" oninput="rp()"></div>
+            <div class="f"><label>ラベル列文字色</label><input type="color" id="lctc" value="#ffffff" oninput="rp()"></div>
+          </div>
+        </div>
+        <div style="margin-top:7px;">
+          <label><input type="checkbox" id="show-hdr" checked onchange="rp()"> ヘッダー行を表示</label>
+        </div>
+        <div class="sep"></div>
+        <label>セル強調カラー</label>
+        <div class="fi">
+          <div class="f"><label>強調背景色</label><input type="color" id="emph-bg" value="#ffff00" oninput="rp()"></div>
+          <div class="f"><label>強調文字色</label><input type="color" id="emph-tc" value="#ee0000" oninput="rp()"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Columns -->
+  <div class="section" id="sec-cols">
+    <div class="sec-hd" onclick="toggleSec('cols')"><h3>📋 列設定 <span class="badge" id="col-cnt">0</span></h3><span class="sec-arrow">▼</span></div>
+    <div class="sec-body" style="max-height:420px;">
+      <div class="sec-body-inner">
+        <div id="cols-list"></div>
+        <button class="btn btn-secondary" style="width:100%;margin-top:5px;" onclick="addCol()">＋ 列を追加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rows -->
+  <div class="section" id="sec-rows">
+    <div class="sec-hd" onclick="toggleSec('rows')"><h3>📝 データ行 <span class="badge" id="row-cnt">0</span></h3><span class="sec-arrow">▼</span></div>
+    <div class="sec-body" style="max-height:420px;">
+      <div class="sec-body-inner">
+        <div id="rows-list"></div>
+        <button class="btn btn-secondary" style="width:100%;margin-top:5px;" onclick="addRow()">＋ 行を追加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Annotation -->
+  <div class="section sec-closed" id="sec-ann">
+    <div class="sec-hd" onclick="toggleSec('ann')"><h3>📝 注釈</h3><span class="sec-arrow">▼</span></div>
+    <div class="sec-body" style="max-height:0;opacity:0;">
+      <div class="sec-body-inner">
+        <label><input type="checkbox" id="ann-en" onchange="rp()"> 注釈を表示する</label>
+        <div class="sep"></div>
+        <label>テキスト</label>
+        <textarea id="ann-txt" rows="2" oninput="rp()" style="resize:vertical;line-height:1.5;font-family:inherit;width:100%;padding:5px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;outline:none;">※ 注釈テキスト</textarea>
+        <div class="fi" style="margin-top:6px;">
+          <div class="f"><label>サイズ</label><input type="number" id="ann-fs" value="20" min="8" max="80" oninput="rp()"></div>
+          <div class="f">
+            <label>揃え</label>
+            <select id="ann-align" onchange="rp()" style="width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:4px 6px;font-size:12px;">
+              <option value="right">右揃え</option>
+              <option value="left">左揃え</option>
+              <option value="center">中央揃え</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canvas / Safe Zone -->
+  <div class="section sec-closed" id="sec-canvas">
+    <div class="sec-hd" onclick="toggleSec('canvas')"><h3>📺 キャンバス・安全領域</h3><span class="sec-arrow">▼</span></div>
+    <div class="sec-body" style="max-height:0;opacity:0;">
+      <div class="sec-body-inner">
+        <div style="font-size:11px;color:var(--subtext);margin-bottom:6px;">出力: 1920 × 1080 px</div>
+        <label>安全領域 <span id="safe-pct-v">95</span>%</label>
+        <input type="range" id="safe-pct" min="80" max="100" value="95" oninput="document.getElementById('safe-pct-v').textContent=this.value;updateSafeZone()">
+        <div style="margin-top:7px;">
+          <label><input type="checkbox" id="show-safe" checked onchange="updateSafeZone()"> 安全領域を表示</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Texture -->
+  <div class="section sec-closed" id="sec-tex">
+    <div class="sec-hd" onclick="toggleSec('tex')"><h3>🖼️ テクスチャ合成</h3><span class="sec-arrow">▼</span></div>
+    <div class="sec-body" style="max-height:0;opacity:0;">
+      <div class="sec-body-inner">
+        <label><input type="checkbox" id="use-tex" onchange="rp()"> テクスチャを適用</label>
+        <div style="margin-top:7px;display:flex;gap:7px;align-items:center;">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('tex-file').click()">画像を選択</button>
+          <img id="tex-prev" style="height:28px;border-radius:4px;border:1px solid var(--border);display:none;">
+          <span id="tex-name" style="font-size:10px;color:var(--dim);"></span>
+        </div>
+        <input type="file" id="tex-file" accept="image/*" style="display:none" onchange="loadTex(this)">
+        <div class="fi" style="margin-top:7px;">
+          <div class="f">
+            <label>透明度 <span id="tex-opv">30</span>%</label>
+            <input type="range" id="tex-op" min="0" max="100" value="30" oninput="document.getElementById('tex-opv').textContent=this.value;rp()">
+          </div>
+          <div class="f">
+            <label>ブレンド</label>
+            <select id="tex-blend" onchange="rp()">
+              <option value="overlay">オーバーレイ</option>
+              <option value="multiply">乗算</option>
+              <option value="screen">スクリーン</option>
+              <option value="hard-light">ハードライト</option>
+              <option value="normal">通常</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Padding / Position -->
+  <div class="section sec-closed" id="sec-pad">
+    <div class="sec-hd" onclick="toggleSec('pad')"><h3>📐 余白・配置</h3><span class="sec-arrow">▼</span></div>
+    <div class="sec-body" style="max-height:0;opacity:0;">
+      <div class="sec-body-inner">
+        <div class="fi">
+          <div class="f"><label>上</label><input type="number" id="pt" value="0" min="0" max="200" oninput="rp()"></div>
+          <div class="f"><label>右</label><input type="number" id="pr" value="0" min="0" max="200" oninput="rp()"></div>
+          <div class="f"><label>下</label><input type="number" id="pb" value="0" min="0" max="200" oninput="rp()"></div>
+          <div class="f"><label>左</label><input type="number" id="pl" value="0" min="0" max="200" oninput="rp()"></div>
+        </div>
+        <div class="fi">
+          <div class="f"><label>タイトル下余白</label><input type="number" id="tgap" value="4" min="0" max="40" oninput="rp()"></div>
+        </div>
+        <div class="sep"></div>
+        <label>配置位置</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:4px;">
+          <button class="pos-btn" id="pos-lb" onclick="setPos('lb')">↙ 左下</button>
+          <button class="pos-btn" id="pos-cb" onclick="setPos('cb')">↓ 中央下</button>
+          <button class="pos-btn active" id="pos-rb" onclick="setPos('rb')">↘ 右下</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:4px;">
+          <div></div>
+          <button class="pos-btn" id="pos-cc" onclick="setPos('cc')">⊕ 中央</button>
+          <div></div>
+        </div>
+        <div class="sep"></div>
+        <label>全体サイズ <span id="gscale-v">100</span>%</label>
+        <input type="range" id="gscale" min="20" max="300" value="100" oninput="document.getElementById('gscale-v').textContent=this.value;updateSafeZone()">
+        <div class="sep"></div>
+        <!-- ── 英数字サイズ調整 ── -->
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <input type="checkbox" id="en-adj" onchange="rp()"> 英数字のサイズを調整
+        </label>
+        <div class="fi" style="margin-top:2px;">
+          <div class="f"><label>高さシフト <span style="font-size:9px;color:var(--dim);">(px)</span></label><input type="number" id="en-vshift" value="0" min="-100" max="100" oninput="rp()"></div>
+          <div class="f"><label>サイズ調整 <span style="font-size:9px;color:var(--dim);">(px)</span></label><input type="number" id="en-fsize" value="0" min="-60" max="60" oninput="rp()"></div>
+          <div class="f"><label>縦比率 <span style="font-size:9px;color:var(--dim);">(%)</span></label><input type="number" id="en-vscale" value="0" min="-50" max="50" oninput="rp()"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guide Image -->
+  <div class="section sec-closed" id="sec-guide">
+    <div class="sec-hd" onclick="toggleSec('guide')"><h3>🖼️ ガイド画像</h3><span class="sec-arrow">▼</span></div>
+    <div class="sec-body" style="max-height:0;opacity:0;">
+      <div class="sec-body-inner">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('guide-inp').click()">📂 画像を選択</button>
+          <button class="btn btn-danger btn-sm" onclick="clearGuide()">✕ クリア</button>
+          <input type="file" id="guide-inp" accept="image/*" style="display:none;" onchange="loadGuide(this)">
+        </div>
+        <div id="guide-fname" style="font-size:10px;color:var(--dim);margin-top:4px;">ファイル未選択</div>
+        <div class="sep"></div>
+        <label>不透明度 <span id="guide-op-v">50</span>%</label>
+        <input type="range" id="guide-op" min="0" max="100" value="50" oninput="document.getElementById('guide-op-v').textContent=this.value;updGuide()">
+        <div class="sep"></div>
+        <label style="font-size:11px;color:var(--dim);">位置・サイズ（プレビュー上でドラッグでも移動可）</label>
+        <div class="fi" style="margin-top:6px;">
+          <div class="f"><label>X <span style="font-size:9px;color:var(--dim);">(px)</span></label><input type="number" id="guide-x" value="0" oninput="updGuide()"></div>
+          <div class="f"><label>Y <span style="font-size:9px;color:var(--dim);">(px)</span></label><input type="number" id="guide-y" value="0" oninput="updGuide()"></div>
+        </div>
+        <div class="fi">
+          <div class="f"><label>幅 <span style="font-size:9px;color:var(--dim);">(px)</span></label><input type="number" id="guide-w" value="1920" min="1" oninput="updGuide()"></div>
+          <div class="f"><label>高さ <span style="font-size:9px;color:var(--dim);">(px)</span></label><input type="number" id="guide-h" value="1080" min="1" oninput="updGuide()"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /settings -->
+
+<!-- ════ PREVIEW ════ -->
+<div class="preview-panel" id="preview-panel">
+  <div class="preview-toolbar">
+    <span style="font-size:10px;color:var(--dim);">1920×1080</span>
+    <span style="font-size:10px;color:var(--dim);margin-left:4px;" id="zoom-lbl">– %</span>
+    <button class="btn btn-secondary btn-sm" onclick="adjZoom(1.25)">🔍＋</button>
+    <button class="btn btn-secondary btn-sm" onclick="adjZoom(0.8)">🔍－</button>
+    <button class="btn btn-secondary btn-sm" onclick="resetView()">フィット</button>
+    <span class="ptb-hint">スクロール:ズーム　ドラッグ:移動</span>
+  </div>
+  <div id="preview-container">
+    <div id="ov-canvas">
+      <div id="ov-checker"></div>
+      <div id="safe-overlay"></div>
+      <div id="safe-label"></div>
+      <img id="guide-img" style="display:none;position:absolute;top:0;left:0;pointer-events:auto;z-index:1;user-select:none;cursor:move;" draggable="false">
+      <div id="ov-root"><div id="gfx-wrap"></div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+let cols=[{id:1,label:'2行目１',wOfs:0,visible:true,suffix:'',sfxGap:0,xShift:0},{id:2,label:'2行目2',wOfs:0,visible:true,suffix:'',sfxGap:0,xShift:0},{id:3,label:'2行目3',wOfs:0,visible:true,suffix:'',sfxGap:0,xShift:0},{id:4,label:'2行目4',wOfs:0,visible:true,suffix:'',sfxGap:0,xShift:0}];
+let rows=[{id:1,vals:['3行目以降1','3行目以降2','3行目以降3','3行目以降4'],emph:[false,false,false,false]},{id:2,vals:['3行目以降1','3行目以降2','3行目以降3','3行目以降4'],emph:[false,false,false,false]}];
+let nci=5, nri=3;
+let texDataUrl=null;
+let zoomMul=1.0;
+let panX=0, panY=0;
+let ovPos='rb';
+
+// ── Undo / Redo ──
+let _history=[], _histIdx=-1;
+const MAX_HIST=60;
+let _snapTimer=null;
+
+// ══════════════════════════════════════
+//  UNDO / REDO
+// ══════════════════════════════════════
+function _snap(){
+  const state={
+    cols:cols.map(c=>({...c})),
+    rows:rows.map(r=>({id:r.id,vals:[...r.vals],emph:r.emph?[...r.emph]:[]})),
+    nci,nri
+  };
+  _history=_history.slice(0,_histIdx+1);
+  _history.push(state);
+  if(_history.length>MAX_HIST){ _history.shift(); } else { _histIdx++; }
+  _updUndoBtn();
+}
+function _dsnap(){
+  clearTimeout(_snapTimer);
+  _snapTimer=setTimeout(_snap, 600);
+}
+function _restoreSnap(state){
+  cols=state.cols.map(c=>({...c}));
+  rows=state.rows.map(r=>({id:r.id,vals:[...r.vals],emph:r.emph?[...r.emph]:[]}));
+  nci=state.nci; nri=state.nri;
+  renderCols(); renderRows(); rp();
+  _updUndoBtn();
+}
+function undo(){
+  if(_histIdx<=0) return;
+  _histIdx--;
+  _restoreSnap(_history[_histIdx]);
+}
+function redo(){
+  if(_histIdx>=_history.length-1) return;
+  _histIdx++;
+  _restoreSnap(_history[_histIdx]);
+}
+function _updUndoBtn(){
+  const u=document.getElementById('btn-undo');
+  const r=document.getElementById('btn-redo');
+  if(u) u.disabled=_histIdx<=0;
+  if(r) r.disabled=_histIdx>=_history.length-1;
+}
+
+// ══════════════════════════════════════
+//  THEME
+// ══════════════════════════════════════
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  document.querySelectorAll('.theme-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.theme===t);
+  });
+}
+
+// ══════════════════════════════════════
+//  FONT SYSTEM
+// ══════════════════════════════════════
+const BUILTINS=[
+  {name:'Impact',       css:"'Impact','Arial Black',sans-serif"},
+  {name:'Arial Black',  css:"'Arial Black',sans-serif"},
+  {name:'游ゴシック',   css:"'Yu Gothic','Yu Gothic UI',sans-serif"},
+  {name:'游明朝',       css:"'Yu Mincho','Hiragino Mincho Pro',serif"},
+  {name:'メイリオ',     css:"'Meiryo',sans-serif"},
+  {name:'ヒラギノ角ゴ', css:"'Hiragino Kaku Gothic Pro',sans-serif"},
+  {name:'ヒラギノ明朝', css:"'Hiragino Mincho Pro',serif"},
+  {name:'Arial',        css:"'Arial',sans-serif"},
+  {name:'Helvetica',    css:"'Helvetica Neue',sans-serif"},
+  {name:'Georgia',      css:"'Georgia',serif"},
+  {name:'Verdana',      css:"'Verdana',sans-serif"},
+  {name:'Courier New',  css:"'Courier New',monospace"},
+];
+// システムフォントの英語名→日本語表示名マップ
+const JP_FONT_NAMES={
+  'Yu Gothic':'游ゴシック','Yu Gothic UI':'游ゴシック UI','Yu Mincho':'游明朝',
+  'Meiryo':'メイリオ','Meiryo UI':'メイリオ UI',
+  'Hiragino Kaku Gothic Pro':'ヒラギノ角ゴ Pro','Hiragino Kaku Gothic ProN':'ヒラギノ角ゴ ProN',
+  'Hiragino Mincho Pro':'ヒラギノ明朝 Pro','Hiragino Mincho ProN':'ヒラギノ明朝 ProN',
+  'Hiragino Sans':'ヒラギノ角ゴシック',
+  'MS Gothic':'ＭＳ ゴシック','MS PGothic':'ＭＳ Ｐゴシック',
+  'MS Mincho':'ＭＳ 明朝','MS PMincho':'ＭＳ Ｐ明朝',
+  'BIZ UDGothic':'BIZ UD ゴシック','BIZ UDPGothic':'BIZ UDP ゴシック',
+  'BIZ UDMincho':'BIZ UD 明朝','BIZ UDPMincho':'BIZ UDP 明朝',
+  'UD Digi Kyokasho N-R':'UD デジタル教科書 N-R',
+  'UD Digi Kyokasho NP-R':'UD デジタル教科書 NP-R',
+  'UD Digi Kyokasho NK-R':'UD デジタル教科書 NK-R',
+  'Noto Sans JP':'Noto Sans JP（日本語）','Noto Serif JP':'Noto Serif JP（日本語）',
+  'Noto Sans CJK JP':'Noto Sans CJK JP',
+};
+function getFontDisplayName(name){ return JP_FONT_NAMES[name]||name; }
+let sysfonts=[];
+let favFonts=JSON.parse(localStorage.getItem('ovg-fav')||'[]');
+let fpSel={
+  title:{name:'Impact',css:"'Impact','Arial Black',sans-serif"},
+  table:{name:'游ゴシック',css:"'Yu Gothic','Yu Gothic UI',sans-serif"}
+};
+let activeFp=null;
+let fpQ={title:'',table:''};
+
+function allFonts(){
+  const n=new Set(BUILTINS.map(f=>f.name));
+  return [...BUILTINS,...sysfonts.filter(f=>!n.has(f.name))];
+}
+
+async function loadSysFonts(){
+  if(!('queryLocalFonts' in window)){
+    alert('システムフォントの読み込みはChrome 103以降でのみ対応しています。');return;
+  }
+  try{
+    const fonts=await queryLocalFonts();
+    const fams=[...new Set(fonts.map(f=>f.family))].sort();
+    sysfonts=fams.map(n=>({name:n,css:`'${n}'`}));
+    if(activeFp) renderFpList(activeFp);
+    alert(`✅ ${sysfonts.length}個のフォントを読み込みました`);
+  }catch(e){
+    if(e.name==='NotAllowedError') alert('フォントへのアクセスが拒否されました。\nブラウザのアドレスバー🔒→「フォント」を許可してください。');
+    else alert('フォント読み込みエラー: '+e.message);
+  }
+}
+
+function openFp(id){
+  if(activeFp&&activeFp!==id) closeFp(activeFp);
+  activeFp=id;
+  const btn=document.getElementById(`fp-cur-${id}`);
+  const dd=document.getElementById(`fp-dd-${id}`);
+  const r=btn.getBoundingClientRect();
+  dd.style.top=(r.bottom+3)+'px';
+  dd.style.left=r.left+'px';
+  dd.style.width=Math.max(r.width,230)+'px';
+  dd.classList.add('open');
+  const si=document.getElementById(`fp-srch-${id}`);
+  si.value=''; fpQ[id]='';
+  renderFpList(id);
+  setTimeout(()=>si.focus(),40);
+}
+function closeFp(id){
+  document.getElementById(`fp-dd-${id}`).classList.remove('open');
+  if(activeFp===id) activeFp=null;
+}
+document.addEventListener('mousedown',e=>{
+  if(!activeFp) return;
+  const wrap=document.getElementById(`fp-wrap-${activeFp}`);
+  const dd=document.getElementById(`fp-dd-${activeFp}`);
+  if(wrap&&!wrap.contains(e.target)&&!dd.contains(e.target)) closeFp(activeFp);
+});
+
+function filterFp(id,q){fpQ[id]=q; renderFpList(id);}
+
+function renderFpList(id){
+  const list=document.getElementById(`fp-list-${id}`);
+  const q=(fpQ[id]||'').toLowerCase();
+  const all=allFonts().filter(f=>!q||f.name.toLowerCase().includes(q));
+  const favNames=favFonts.filter(n=>!q||n.toLowerCase().includes(q));
+  let html='';
+  if(favNames.length){
+    html+=`<div class="fp-sec-lbl">⭐ お気に入り (${favNames.length})</div>`;
+    favNames.forEach(name=>{
+      const f=all.find(x=>x.name===name)||{name,css:`'${name}'`};
+      html+=makeFpItem(id,f,true);
+    });
+  }
+  const lbl=sysfonts.length?`フォント一覧 (${all.length})`:`組み込みフォント (${all.length})`;
+  html+=`<div class="fp-sec-lbl">${lbl}</div>`;
+  if(all.length) all.forEach(f=>{ html+=makeFpItem(id,f,favFonts.includes(f.name)); });
+  else html+='<div style="padding:10px;font-size:12px;color:var(--dim);">見つかりません</div>';
+  if(!sysfonts.length&&!q){
+    html+=`<div style="padding:8px;"><button class="fp-load-btn" onclick="loadSysFonts()">🖥️ システムフォントを読み込む</button></div>`;
+  }
+  list.innerHTML=html;
+}
+
+function makeFpItem(id,f,isFav){
+  const ne=esc(f.name), ce=esc(f.css);
+  const sel=fpSel[id].name===f.name?'sel':'';
+  const sc=isFav?'on':'';
+  const dispName=getFontDisplayName(f.name);
+  const jpSub=dispName!==f.name?`<span style="font-size:10px;color:var(--dim);margin-left:4px;">${esc(f.name)}</span>`:'';
+  return `<div class="fp-item ${sel}" data-fpid="${id}" data-name="${ne}" data-css="${ce}" onclick="selectFontItem(this)">
+    <span class="fp-fname" style="font-family:${f.css}">${esc(dispName)}</span>${jpSub}
+    <button class="fp-star ${sc}" data-nm="${ne}" onclick="event.stopPropagation();toggleFav(this.dataset.nm,this)">★</button>
+  </div>`;
+}
+function selectFontItem(el){ selectFont(el.dataset.fpid,el.dataset.name,el.dataset.css); }
+function selectFont(id,name,css){
+  fpSel[id]={name,css};
+  document.getElementById(`fp-cur-${id}`).textContent=name;
+  const p=document.getElementById(`fp-prev-${id}`);
+  if(p){ p.style.fontFamily=css; }
+  closeFp(id);
+  if(id==='table') updateWeightSelect('tfw-t', css);
+  if(id==='title') updateWeightSelect('tfw-title', css);
+  rp();
+}
+
+// ── テーブルフォントの使用可能ウェイトを Canvas で検出 ──
+async function getAvailableWeights(fontCss){
+  const weights=[100,200,300,400,500,600,700,800,900];
+  const fontSize='22px';
+  // 各ウェイトでフォントをロード（失敗しても続行）
+  await Promise.allSettled(weights.map(w=>
+    document.fonts.load(`${w} ${fontSize} ${fontCss}`)
+  ));
+  const canvas=document.createElement('canvas');
+  canvas.width=270; canvas.height=34;
+  const ctx=canvas.getContext('2d');
+  const renders={};
+  weights.forEach(w=>{
+    ctx.clearRect(0,0,270,34);
+    ctx.fillStyle='#ffffff';
+    ctx.font=`${w} ${fontSize} ${fontCss}`;
+    ctx.fillText('Hamburgefontsiv',4,25);
+    renders[w]=Array.from(ctx.getImageData(0,0,270,34).data).join(',');
+  });
+  // 描画結果がユニーク = そのウェイトが実際に存在する
+  const available=[];
+  const seen=new Set();
+  weights.forEach(w=>{
+    if(!seen.has(renders[w])){ seen.add(renders[w]); available.push(w); }
+  });
+  return available.length>0 ? available : [400,700];
+}
+async function updateWeightSelect(selId, fontCss){
+  const sel=document.getElementById(selId);
+  if(!sel) return;
+  const available=await getAvailableWeights(fontCss);
+  const curVal=parseInt(sel.value);
+  Array.from(sel.options).forEach(opt=>{
+    const w=parseInt(opt.value);
+    const ok=available.includes(w);
+    opt.disabled=!ok;
+    opt.style.color=ok?'':'var(--dim)';
+    opt.style.fontStyle=ok?'':'italic';
+  });
+  // 現在のウェイトが使えない場合は最近傍の有効ウェイトに変更
+  if(!available.includes(curVal)){
+    const closest=available.reduce((a,b)=>
+      Math.abs(b-curVal)<Math.abs(a-curVal)?b:a
+    );
+    sel.value=String(closest);
+    rp();
+  }
+}
+function toggleFav(name,btn){
+  if(favFonts.includes(name)) favFonts=favFonts.filter(f=>f!==name);
+  else favFonts=[...favFonts,name];
+  localStorage.setItem('ovg-fav',JSON.stringify(favFonts));
+  if(btn){ btn.classList.toggle('on',favFonts.includes(name)); }
+  if(activeFp) renderFpList(activeFp);
+}
+
+// ══════════════════════════════════════
+//  ACCORDION
+// ══════════════════════════════════════
+function toggleSec(id){
+  const sec=document.getElementById('sec-'+id);
+  const body=sec.querySelector('.sec-body');
+  const closing=!sec.classList.contains('sec-closed');
+  if(closing){
+    body.style.maxHeight=body.scrollHeight+'px';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      body.style.maxHeight='0'; body.style.opacity='0';
+      sec.classList.add('sec-closed');
+    }));
+  } else {
+    sec.classList.remove('sec-closed');
+    body.style.maxHeight=body.scrollHeight+'px'; body.style.opacity='1';
+    setTimeout(()=>{ if(!sec.classList.contains('sec-closed')) body.style.maxHeight='1400px'; },280);
+  }
+}
+
+// ══════════════════════════════════════
+//  COLUMNS / ROWS
+// ══════════════════════════════════════
+function addCol(){
+  cols.push({id:nci++,label:'新列',wOfs:0,visible:true,suffix:'',sfxGap:0,xShift:0});
+  rows.forEach(r=>{
+    r.vals.push('0');
+    if(!r.emph) r.emph=cols.map(()=>false);
+    else r.emph.push(false);
+  });
+  renderCols(); renderRows(); rp(); _snap();
+}
+function remCol(id){
+  const i=cols.findIndex(c=>c.id===id);
+  if(i<0) return;
+  cols.splice(i,1);
+  rows.forEach(r=>{
+    r.vals.splice(i,1);
+    if(r.emph) r.emph.splice(i,1);
+  });
+  renderCols(); renderRows(); rp(); _snap();
+}
+function renderCols(){
+  const el=document.getElementById('cols-list'); el.innerHTML='';
+  cols.forEach((c,i)=>{
+    const vis=c.visible!==false; // デフォルト表示
+    const d=document.createElement('div'); d.className='col-item';
+    d.style.flexWrap='wrap';
+    // 非表示時は行全体を薄くして一目でわかるように
+    if(!vis) d.style.opacity='0.45';
+    d.innerHTML=`
+      <!-- 1行目: 番号・ラベル・操作ボタン -->
+      <div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0;">
+        <button onclick="moveColUp(${c.id})" title="上へ" ${i===0?'disabled':''} style="background:none;border:1px solid var(--border);border-radius:3px;cursor:pointer;font-size:9px;padding:0 4px;line-height:14px;color:var(--subtext);${i===0?'opacity:0.3;':''}">▲</button>
+        <button onclick="moveColDown(${c.id})" title="下へ" ${i===cols.length-1?'disabled':''} style="background:none;border:1px solid var(--border);border-radius:3px;cursor:pointer;font-size:9px;padding:0 4px;line-height:14px;color:var(--subtext);${i===cols.length-1?'opacity:0.3;':''}">▼</button>
+      </div>
+      <span style="color:var(--dim);font-size:10px;min-width:14px;">${i+1}</span>
+      <input type="text" value="${esc(c.label)}" oninput="updCol(${c.id},this.value)"
+        style="flex:1;min-width:60px;${!vis?'text-decoration:line-through;':''}}"
+        title="列名">
+      <button title="${vis?'非表示にする':'表示する'}" onclick="toggleColVis(${c.id})"
+        style="background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:14px;padding:2px 5px;color:${vis?'var(--text)':'var(--dim)'};">${vis?'👀':'🚫'}</button>
+      <button class="btn btn-danger btn-sm" onclick="remCol(${c.id})">✕</button>
+      <!-- 2行目: 詳細パラメーター -->
+      <div style="display:flex;flex-wrap:wrap;gap:4px;width:100%;padding-left:20px;margin-top:3px;">
+        <label style="display:flex;align-items:center;gap:2px;font-size:10px;color:var(--subtext);white-space:nowrap;" title="列幅の加減(px)">
+          幅±<input type="number" value="${c.wOfs||0}" min="-200" max="400" step="1"
+            oninput="updColW(${c.id},this.value)" style="width:44px;flex:none;">
+        </label>
+        <label style="display:flex;align-items:center;gap:2px;font-size:10px;color:var(--subtext);white-space:nowrap;" title="データ数値の後ろに表示する文字（%、本、個 など）">
+          末尾<input type="text" value="${esc(c.suffix||'')}" placeholder="%" maxlength="4"
+            oninput="updColSfx(${c.id},this.value)" style="width:32px;flex:none;text-align:center;">
+          <button onclick="extractColSuffix(${c.id})" title="データの末尾にある文字を自動抽出して末尾文字に設定（値からは削除）"
+            style="font-size:10px;padding:1px 5px;background:none;border:1px solid var(--border);border-radius:3px;cursor:pointer;color:var(--accent);white-space:nowrap;">⤴抽出</button>
+        </label>
+        <label style="display:flex;align-items:center;gap:2px;font-size:10px;color:var(--subtext);white-space:nowrap;" title="数値と末尾文字の間隔(px)">
+          間隔<input type="number" value="${c.sfxGap||0}" min="-10" max="40" step="1"
+            oninput="updColSfxGap(${c.id},this.value)" style="width:38px;flex:none;">
+        </label>
+        <label style="display:flex;align-items:center;gap:2px;font-size:10px;color:var(--subtext);white-space:nowrap;" title="セル内容を左右にずらす(px)">
+          シフト<input type="number" value="${c.xShift||0}" min="-100" max="100" step="1"
+            oninput="updColXShift(${c.id},this.value)" style="width:44px;flex:none;">
+        </label>
+      </div>`;
+    el.appendChild(d);
+  });
+  document.getElementById('col-cnt').textContent=cols.length;
+}
+function updCol(id,val){ const c=cols.find(c=>c.id===id); if(c){c.label=val;rp();_dsnap();} }
+function updColW(id,val){ const c=cols.find(c=>c.id===id); if(c){c.wOfs=parseInt(val,10)||0;rp();_dsnap();} }
+function updColSfx(id,val){ const c=cols.find(c=>c.id===id); if(c){c.suffix=val;rp();_dsnap();} }
+function updColSfxGap(id,val){ const c=cols.find(c=>c.id===id); if(c){c.sfxGap=parseInt(val,10)||0;rp();_dsnap();} }
+function updColXShift(id,val){ const c=cols.find(c=>c.id===id); if(c){c.xShift=parseInt(val,10)||0;rp();_dsnap();} }
+
+// データ値の末尾にある非数値文字を自動抽出して suffix に設定し、値からは除去する
+// 例: "36.7%" → suffix="%" , val="36.7"  /  "30本" → suffix="本" , val="30"
+function extractColSuffix(id){
+  const ci=cols.findIndex(c=>c.id===id);
+  if(ci<0) return;
+  const c=cols[ci];
+  // 非空の値から末尾の非数値文字列を取得
+  const nonEmpty=rows.map(r=>r.vals[ci]||'').filter(v=>v!=='');
+  if(!nonEmpty.length) return;
+  // 各値の末尾非数値部分を抽出（数字・小数点・マイナス以外の末尾文字）
+  const sfxOf=v=>(v.match(/([^0-9.\-]+)$/)||['',''])[1];
+  // 全値で共通する末尾文字を採用（最初の値のsuffixを基準に確認）
+  const candidate=sfxOf(nonEmpty[0]);
+  if(!candidate) return;
+  const common=nonEmpty.every(v=>v.endsWith(candidate));
+  const sfx=common ? candidate : sfxOf(nonEmpty[0]); // 共通でなければ最初の値を採用
+  if(!sfx) return;
+  // 全行の値から末尾文字を除去
+  rows.forEach(r=>{
+    const val=r.vals[ci]||'';
+    if(val.endsWith(sfx)) r.vals[ci]=val.slice(0,val.length-sfx.length);
+  });
+  c.suffix=sfx;
+  renderCols(); renderRows(); rp(); _snap();
+}
+function toggleColVis(id){ const c=cols.find(c=>c.id===id); if(c){c.visible=c.visible===false;renderCols();rp();_snap();} }
+function moveColUp(id){
+  const i=cols.findIndex(c=>c.id===id); if(i<=0) return;
+  [cols[i-1],cols[i]]=[cols[i],cols[i-1]];
+  rows.forEach(r=>{
+    if(r.vals) [r.vals[i-1],r.vals[i]]=[r.vals[i],r.vals[i-1]];
+    if(r.emph) [r.emph[i-1],r.emph[i]]=[r.emph[i],r.emph[i-1]];
+  });
+  renderCols(); renderRows(); rp(); _snap();
+}
+function moveColDown(id){
+  const i=cols.findIndex(c=>c.id===id); if(i<0||i>=cols.length-1) return;
+  [cols[i],cols[i+1]]=[cols[i+1],cols[i]];
+  rows.forEach(r=>{
+    if(r.vals) [r.vals[i],r.vals[i+1]]=[r.vals[i+1],r.vals[i]];
+    if(r.emph) [r.emph[i],r.emph[i+1]]=[r.emph[i+1],r.emph[i]];
+  });
+  renderCols(); renderRows(); rp(); _snap();
+}
+
+function addRow(){
+  rows.push({id:nri++, vals:cols.map(()=>'0'), emph:cols.map(()=>({on:false,bg:'',tc:''}))});
+  renderRows(); rp(); _snap();
+}
+function remRow(id){ const i=rows.findIndex(r=>r.id===id); if(i>=0){rows.splice(i,1);renderRows();rp();_snap();} }
+function updRow(rid,ci,val){ const r=rows.find(r=>r.id===rid); if(r){r.vals[ci]=val;rp();_dsnap();} }
+function updEmph(rid,ci,key,val){
+  const r=rows.find(r=>r.id===rid); if(!r) return;
+  if(!r.emph) r.emph=cols.map(()=>({on:false,custom:false,bg:'#ffff00',tc:'#ee0000'}));
+  r.emph[ci]=normEmph(r.emph[ci]);
+  r.emph[ci][key]=val;
+  if(key==='custom'||key==='on'){ renderRows(); }
+  rp(); _snap();
+}
+
+// emph データを正規化（bool → object への移行）
+// on:一括強調チェック  custom:個別色チェック  bg/tc:個別色
+function normEmph(e){
+  if(!e||typeof e!=='object') return {on:!!e, custom:false, bg:'#ffff00', tc:'#ee0000'};
+  return {on:!!e.on, custom:!!e.custom, bg:e.bg||'#ffff00', tc:e.tc||'#ee0000'};
+}
+
+function renderRows(){
+  const el=document.getElementById('rows-list'); el.innerHTML='';
+  rows.forEach(row=>{
+    if(!row.emph) row.emph=cols.map(()=>({on:false,custom:false,bg:'#ffff00',tc:'#ee0000'}));
+    // emph 配列をカラム数に合わせる（列追加後の対応）
+    while(row.emph.length<cols.length) row.emph.push({on:false,custom:false,bg:'#ffff00',tc:'#ee0000'});
+    const d=document.createElement('div'); d.className='row-item'; d.style.flexWrap='wrap';
+    const inp=cols.map((c,ci)=>{
+      const e=normEmph(row.emph[ci]);
+      const dim=e.custom?'':'opacity:0.35;pointer-events:none;';
+      return `<div style="flex:1;min-width:40px;">
+        <div style="font-size:9px;color:var(--dim);margin-bottom:2px;">${esc(c.label)}</div>
+        <input type="text" value="${esc(row.vals[ci]||'')}" oninput="updRow(${row.id},${ci},this.value)">
+        <div class="emph-row">
+          <input type="checkbox" tabindex="-1" ${e.on?'checked':''} onchange="updEmph(${row.id},${ci},'on',this.checked)" title="強調（一括色）">
+          <input type="checkbox" tabindex="-1" ${e.custom?'checked':''} onchange="updEmph(${row.id},${ci},'custom',this.checked)" title="個別色を設定" style="accent-color:#44aaff;">
+          <input type="color" tabindex="-1" value="${e.bg}" oninput="updEmph(${row.id},${ci},'bg',this.value)" title="個別背景色" style="${dim}">
+          <input type="color" tabindex="-1" value="${e.tc}" oninput="updEmph(${row.id},${ci},'tc',this.value)" title="個別文字色" style="${dim}">
+        </div>
+      </div>`;
+    }).join('');
+    d.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:5px;flex:1;">${inp}</div>
+      <button class="btn btn-danger btn-sm" onclick="remRow(${row.id})" style="align-self:flex-start;margin-top:2px;">✕</button>`;
+    el.appendChild(d);
+  });
+  document.getElementById('row-cnt').textContent=rows.length;
+}
+
+// ══════════════════════════════════════
+//  EXCEL IMPORT
+// ══════════════════════════════════════
+function importExcel(inp){
+  const f=inp.files[0]; if(!f)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      // raw:false → Excelの表示形式（%など）をそのまま取得
+      const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+      if(data.length<2){alert('データが不足しています。\n1行目=タイトル、2行目=列ヘッダー、3行目以降=データが必要です。');return;}
+
+      // 1行目: タイトル（A1セルをタイトルテキストに設定）
+      const titleVal=data[0][0]!=null?String(data[0][0]):'';
+      if(titleVal) document.getElementById('tt').value=titleVal;
+
+      // 2行目: 列ヘッダー（ラベルのみ上書き、wOfs/suffix/sfxGap/xShift/visible は保持）
+      const hdrs=data[1].map(h=>String(h));
+      const newColN=hdrs.length;
+      // 既存列のラベルを更新
+      for(let i=0;i<Math.min(newColN,cols.length);i++) cols[i].label=hdrs[i];
+      // 列が増えた → 新列を追加
+      for(let i=cols.length;i<newColN;i++)
+        cols.push({id:nci++,label:hdrs[i],wOfs:0,visible:true,suffix:'',sfxGap:0,xShift:0});
+      // 列が減った → 余分な列を削除
+      if(newColN<cols.length) cols.splice(newColN);
+
+      // 3行目以降: データ行（vals のみ上書き、emph カラー設定は保持）
+      const newDataRows=[];
+      for(let i=2;i<data.length;i++){
+        const rv=hdrs.map((_,j)=>String(data[i][j]!=null?data[i][j]:''));
+        if(rv.some(v=>v!=='')) newDataRows.push(rv); // 完全空行はスキップ
+      }
+      const newRowN=newDataRows.length;
+      // 既存行の vals を更新（emph は保持し、列数に合わせて長さ調整）
+      const emptyEmph=()=>({on:false,custom:false,bg:'#ffff00',tc:'#ee0000'});
+      for(let i=0;i<Math.min(newRowN,rows.length);i++){
+        rows[i].vals=newDataRows[i];
+        if(!rows[i].emph) rows[i].emph=cols.map(emptyEmph);
+        while(rows[i].emph.length<newColN) rows[i].emph.push(emptyEmph());
+        if(rows[i].emph.length>newColN) rows[i].emph.splice(newColN);
+      }
+      // 行が増えた → 新行を追加
+      for(let i=rows.length;i<newRowN;i++)
+        rows.push({id:nri++, vals:newDataRows[i], emph:cols.map(emptyEmph)});
+      // 行が減った → 余分な行を削除
+      if(newRowN<rows.length) rows.splice(newRowN);
+
+      renderCols(); renderRows(); rp(); _snap();
+      alert(`✅ タイトル「${titleVal}」, ${newColN}列 × ${newRowN}行を読み込みました（スタイルは保持）`);
+    }catch(err){alert('エラー: '+err.message);}
+  };
+  reader.readAsArrayBuffer(f); inp.value='';
+}
+
+// ══════════════════════════════════════
+//  TEXTURE
+// ══════════════════════════════════════
+function loadTex(inp){
+  const f=inp.files[0]; if(!f)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    texDataUrl=e.target.result;
+    const p=document.getElementById('tex-prev');
+    p.src=texDataUrl; p.style.display='block';
+    document.getElementById('tex-name').textContent=f.name;
+    document.getElementById('use-tex').checked=true; rp();
+  };
+  reader.readAsDataURL(f); inp.value='';
+}
+
+// ══════════════════════════════════════
+//  BUILD GRAPHIC HTML
+//  Returns the HTML string for the overlay graphic.
+//  Used by both rp() and exportPNG().
+// ══════════════════════════════════════
+function buildGraphicHTML(){
+  const titleTxt=v('tt'), titleColor=v('tc'), strokeColor=v('tsc'), strokeW=+v('tsw')||0;
+  const titleSize=+v('tfs')||38, isItalic=cb('tital');
+  const tfwTitleEl=document.getElementById('tfw-title');
+  const titleFW=tfwTitleEl?tfwTitleEl.value:'900';
+  const titleFont=fpSel.title.css, tableFont=fpSel.table.css;
+  const tc2en=cb('tc2-en'), tc2=v('tc2'), tc2pos=Math.max(1,+v('tc2-pos')||2);
+
+  const hBg=v('hbg'), dBg=v('dbg');
+  const htColor=v('htc'), dtColor=v('dtc');
+  const bColor=v('bc'), bWidth=+v('bw')||2;
+  const hFSize=+v('hfs')||28, dFSize=+v('dfs')||34;
+  const cWidth=+v('cw')||92, cHeight=+v('ch')||58, cRadius=+v('cr')||0;
+  const fcs=v('fcs'), lctc=v('lctc');
+  // lcbg-sync が ON のときはヘッダー背景色を使う（lcbg の値は変えない）
+  const lcbg=cb('lcbg-sync') ? v('hbg') : v('lcbg');
+  const emphBg=v('emph-bg')||'#ffff00', emphTc=v('emph-tc')||'#ee0000';
+  const showHdr=cb('show-hdr');
+  const useTex=cb('use-tex'), texOp=(+v('tex-op'))/100, texBlend=v('tex-blend');
+  const pTop=+v('pt')||0, pRight=+v('pr')||0, pBottom=+v('pb')||0, pLeft=+v('pl')||0;
+  const tGap=+v('tgap')||4;
+
+  const bdr=`${bWidth}px solid ${bColor}`;
+  const sfxFs=+v('sfx-fs')||20; // 末尾文字（単位）のフォントサイズ
+  // テーブルフォントスタイル
+  const tfwEl=document.getElementById('tfw-t');
+  const tblFW=tfwEl?tfwEl.value:'700';
+  const tblFS=cb('tital-t')?'italic':'normal';
+  const spanStyle=`display:inline-block;white-space:nowrap;transform-origin:center center;`;
+  // 英数字調整
+  const enAdj=cb('en-adj');
+  const enVShift=+v('en-vshift')||0;
+  const enFSize=+v('en-fsize')||0;
+  const enVScale=+v('en-vscale')||0;
+  const EN_RE=/[A-Za-z0-9Ａ-Ｚａ-ｚ０-９]/;
+  function wrapEN(text, basePx){
+    if(!enAdj) return esc(text);
+    const adjPx=basePx+enFSize;
+    const sy=1+enVScale/100;
+    return Array.from(text).map(ch=>{
+      if(EN_RE.test(ch))
+        return `<span style="font-size:${adjPx}px;display:inline-block;transform:translateY(${enVShift}px) scaleY(${sy});transform-origin:center 75%;">${esc(ch)}</span>`;
+      return esc(ch);
+    }).join('');
+  }
+  // 内側グリッド線: 各セルに right/bottom のみ付与（left/top を付けると html2canvas で二重描画になる）
+  // ※ td/th の height は最小高さにしかならないため、内側 div で高さを厳密に固定する
+  const cellBase=`border-right:${bdr};border-bottom:${bdr};font-weight:${tblFW};font-style:${tblFS};padding:0;font-family:${tableFont};vertical-align:middle;`;
+  const cellInner=`height:${cHeight}px;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:2px 6px;box-sizing:border-box;`;
+  // カラムごとの実幅（グローバル幅 + 列ごとのオフセット）
+  const colWidths=cols.map(c=>Math.max(10, cWidth+(c.wOfs||0)));
+  function colW(ci){const w=colWidths[ci];return `width:${w}px;min-width:${w}px;max-width:${w}px;`;}
+
+  // 外側の枠線: position:absolute オーバーレイで描画する
+  //   ・外側コンテナ (position:relative) の絶対配置子要素として配置
+  //   ・clip コンテナ (overflow:hidden) の外側に並列配置されるため切り取られない
+  //   ・box-shadow は html2canvas が正しく描画しないため使わない
+
+  // ── Table ──
+  let tbl=
+    // 外側コンテナ: relative で absolute 子を受け取る
+    `<div style="position:relative;display:inline-block;">` +
+    // 枠線オーバーレイ: clip コンテナの兄弟 → overflow:hidden に切られない
+    `<div style="position:absolute;top:0;left:0;right:0;bottom:0;border:${bdr};border-radius:${cRadius}px;z-index:2;pointer-events:none;box-sizing:border-box;"></div>` +
+    // clip コンテナ: テーブル角を border-radius でクリップ
+    `<div style="overflow:hidden;border-radius:${cRadius}px;">` +
+    `<table style="border-collapse:separate;border-spacing:0;table-layout:fixed;">`;
+
+  if(showHdr&&cols.length){
+    tbl+='<tr>';
+    cols.forEach((c,ci)=>{
+      if(c.visible===false) return; // 非表示列はスキップ
+      let bg=hBg, tc=htColor;
+      if(fcs==='label'&&ci===0&&rows.length){ bg=lcbg; tc=lctc; }
+      tbl+=`<th style="${cellBase}${colW(ci)}background:${bg};color:${tc};font-size:${hFSize}px;">
+        <div style="${cellInner}"><span class="cell-text" style="${spanStyle}">${wrapEN(c.label,hFSize)}</span></div></th>`;
+    });
+    tbl+='</tr>';
+  }
+
+  rows.forEach(row=>{
+    if(!row.emph) row.emph=cols.map(()=>({on:false,bg:'',tc:''}));
+    tbl+='<tr>';
+    row.vals.forEach((val,ci)=>{
+      if(cols[ci]&&cols[ci].visible===false) return; // 非表示列はスキップ
+      let bg=dBg, tc=dtColor;
+      if(fcs==='label'&&ci===0){ bg=lcbg; tc=lctc; }
+      // セル色上書き: ②個別色が優先、なければ①一括強調色
+      const emphObj=normEmph(row.emph[ci]);
+      if(emphObj.custom){ bg=emphObj.bg; tc=emphObj.tc; }
+      else if(emphObj.on){ bg=emphBg; tc=emphTc; }
+      const col=cols[ci]||{};
+      const sfx=esc(col.suffix||'');
+      const sfxGap=col.sfxGap||0;
+      const xShift=col.xShift||0;
+      // 末尾文字: 間隔(sfxGap)はmargin-leftで制御。cell-text全体でscaleXが効くため長体率も正常に機能する
+      const sfxHtml=sfx?`<span style="font-size:${sfxFs}px;font-weight:700;vertical-align:baseline;${sfxGap?`margin-left:${sfxGap}px;`:''}">${sfx}</span>`:'';
+      // xShiftはdata属性で渡し、applyAutoScaleがscaleXと組み合わせてtransformに適用する
+      tbl+=`<td style="${cellBase}${colW(ci)}background:${bg};color:${tc};font-size:${dFSize}px;">
+        <div style="${cellInner}"><span class="cell-text" style="${spanStyle}" data-xshift="${xShift}">${wrapEN(val,dFSize)}${sfxHtml}</span></div></td>`;
+    });
+    tbl+='</tr>';
+  });
+  tbl+='</table></div></div>'; // </table> </clipDiv(overflow:hidden)> </outerContainer(position:relative)>
+
+  // ── Texture overlay ──
+  let texHtml='';
+  if(useTex&&texDataUrl){
+    texHtml=`<div style="position:absolute;top:0;left:0;right:0;bottom:0;
+      background-image:url('${texDataUrl}');background-size:cover;
+      opacity:${texOp};mix-blend-mode:${texBlend};pointer-events:none;"></div>`;
+  }
+
+  // ── Title（改行対応 + 2色対応 + テーブル幅自動長体）──
+
+  // 縁取りを text-shadow の円形配置でラウンド処理
+  function makeRoundStroke(W,color){
+    if(W<=0) return '';
+    const N=Math.max(20,Math.round(W*5));
+    const parts=[];
+    for(let i=0;i<N;i++){
+      const a=(2*Math.PI*i)/N;
+      parts.push(`${(W*Math.cos(a)).toFixed(2)}px ${(W*Math.sin(a)).toFixed(2)}px 0 ${color}`);
+    }
+    return `text-shadow:${parts.join(',')};`;
+  }
+
+  // ── 2レイヤー縁取り ──
+  // 問題: text-shadow は html2canvas で文字ごとに独立描画され、隣接文字の影が fill に被る
+  // 解決: 縁取りレイヤー（color:transparent + text-shadow）の上に塗りレイヤー（color のみ）を重ねる
+  //       塗りレイヤーが縁取りの"はみ出し"を文字内側ですべて覆い、滲みを消す
+  function layeredText(escaped, fillColor, sw, sc){
+    if(sw<=0) return `<span style="color:${fillColor};">${escaped}</span>`;
+    const shadow=makeRoundStroke(sw,sc);
+    return (
+      `<span style="display:inline-block;position:relative;white-space:nowrap;">` +
+      // Layer1: 縁取りのみ（文字色を transparent にして shadow だけ残す）
+      // color:transparent だと html2canvas が描画ごとスキップするため色を明示する
+      `<span style="${shadow}color:${sc};white-space:nowrap;">${escaped}</span>` +
+      // Layer2: 塗りのみ（絶対配置で Layer1 に重ね、glyph 内側を fillColor で覆う）
+      `<span style="color:${fillColor};position:absolute;top:0;left:0;white-space:nowrap;">${escaped}</span>` +
+      `</span>`
+    );
+  }
+
+  const lineInnerStyle=`display:inline-block;white-space:nowrap;font-size:${titleSize}px;font-style:${isItalic?'italic':'normal'};font-weight:${titleFW};font-family:${titleFont};line-height:1.15;`;
+  let titleHtml='';
+  if(titleTxt.trim()){
+    const lines=titleTxt.split('\n');
+    let charPos=0;
+    const linesHtml=lines.map(line=>{
+      let innerHtml;
+      if(tc2en && tc2pos>0){
+        const lineEnd=charPos+line.length;
+        if(tc2pos<=charPos){
+          innerHtml=layeredText(wrapEN(line,titleSize),tc2,strokeW,strokeColor);
+        } else if(tc2pos>=lineEnd){
+          innerHtml=layeredText(wrapEN(line,titleSize),titleColor,strokeW,strokeColor);
+        } else {
+          const sp=tc2pos-charPos;
+          innerHtml=layeredText(wrapEN(line.slice(0,sp),titleSize),titleColor,strokeW,strokeColor)
+                   +layeredText(wrapEN(line.slice(sp),titleSize),tc2,strokeW,strokeColor);
+        }
+      } else {
+        innerHtml=layeredText(wrapEN(line,titleSize),titleColor,strokeW,strokeColor);
+      }
+      charPos+=line.length+1;
+      return `<div class="title-line" style="display:block;overflow:visible;"><span class="title-line-inner" style="${lineInnerStyle}">${innerHtml}</span></div>`;
+    }).join('');
+    titleHtml=`<div class="title-wrap" style="display:block;margin-bottom:${tGap}px;">${linesHtml}</div>`;
+  }
+
+  // ── Annotation（注釈）──
+  let annHtml='';
+  if(cb('ann-en')){
+    const annTxt=v('ann-txt')||'';
+    const annFs=+v('ann-fs')||20;
+    const annAlign=v('ann-align')||'right';
+    const annSw=Math.max(1,Math.round(annFs*0.12));
+    const annLines=annTxt.split('\n');
+    const annLinesHtml=annLines.map(ln=>{
+      const content=ln?layeredText(esc(ln),'#000000',annSw,'#ffffff'):'&nbsp;';
+      return `<div style="line-height:1.4;">${content}</div>`;
+    }).join('');
+    annHtml=`<div class="gfx-ann" style="display:block;text-align:${annAlign};font-size:${annFs}px;font-family:${tableFont};font-weight:700;margin-top:4px;">${annLinesHtml}</div>`;
+  }
+
+  // width:max-content でタイトルが表幅を超えても外側コンテナが広がりクリップされない
+  return `<div style="display:inline-block;width:max-content;padding:${pTop}px ${pRight}px ${pBottom}px ${pLeft}px;">
+    ${titleHtml}
+    <div class="gfx-table-wrap" style="position:relative;display:inline-block;">${tbl}${texHtml}</div>
+    ${annHtml}
+  </div>`;
+}
+
+// ══════════════════════════════════════
+//  AUTO SCALE PER CELL
+// ══════════════════════════════════════
+function applyAutoScale(root){
+  root.querySelectorAll('.cell-text').forEach(span=>{
+    const xShift=parseFloat(span.dataset.xshift||0);
+    span.style.transform='';
+    span.style.width='';
+    span.style.transformOrigin='';
+    const cell=span.parentElement;
+    const availW=cell.clientWidth-12;
+    const textW=span.scrollWidth;
+    if(availW>0 && textW>availW){
+      // scaleX と xShift を合成（translateX は scaleX の影響を受けないよう先に適用）
+      const scale=(availW/textW).toFixed(5);
+      span.style.width=availW+'px';
+      span.style.transformOrigin='left center';
+      span.style.transform=`translateX(${xShift}px) scaleX(${scale})`;
+    } else if(xShift!==0){
+      span.style.transform=`translateX(${xShift}px)`;
+    }
+  });
+}
+
+// ══════════════════════════════════════
+//  AUTO SCALE TITLE TO TABLE WIDTH
+//  テーブルの実際の幅に合わせてタイトル各行をscaleXで伸縮
+// ══════════════════════════════════════
+function applyTitleScale(root){
+  root.querySelectorAll('.title-wrap').forEach(wrap=>{
+    // title-wrap の直後の兄弟要素がテーブルコンテナ
+    const tableContainer=wrap.nextElementSibling;
+    if(!tableContainer) return;
+    const tableW=tableContainer.offsetWidth;
+    if(tableW<=0) return;
+
+    wrap.querySelectorAll('.title-line-inner').forEach(inner=>{
+      // まずリセットして自然幅を計測
+      inner.style.transform='';
+      inner.style.width='';
+      inner.style.transformOrigin='';
+      const naturalW=inner.scrollWidth;
+      if(naturalW<=0) return;
+      // テーブル幅を超えている場合のみ縮める（セルの長体率と同じ挙動）
+      if(naturalW>tableW){
+        const scale=(tableW/naturalW).toFixed(5);
+        inner.style.width=tableW+'px';
+        inner.style.transformOrigin='left center';
+        inner.style.transform=`scaleX(${scale})`;
+      }
+    });
+  });
+}
+
+// ══════════════════════════════════════
+//  RENDER PREVIEW
+// ══════════════════════════════════════
+function rp(){
+  const html=buildGraphicHTML();
+  const gfxWrap=document.getElementById('gfx-wrap');
+  gfxWrap.innerHTML=html;
+  applyAutoScale(gfxWrap);
+  applyTitleScale(gfxWrap);
+  document.getElementById('lc-row').style.display=v('fcs')==='label'?'block':'none';
+}
+
+// ══════════════════════════════════════
+//  SAFE ZONE / POSITION
+// ══════════════════════════════════════
+function updateSafeZone(){
+  const pct=parseFloat(v('safe-pct'))/100;
+  const mr=Math.round(1920*(1-pct)/2);
+  const mb=Math.round(1080*(1-pct)/2);
+  const show=cb('show-safe');
+  const gs=(parseFloat(document.getElementById('gscale').value)||100)/100;
+
+  const ovl=document.getElementById('safe-overlay');
+  ovl.style.top=mb+'px'; ovl.style.left=mr+'px';
+  ovl.style.right=mr+'px'; ovl.style.bottom=mb+'px';
+  ovl.style.display=show?'block':'none';
+
+  const lbl=document.getElementById('safe-label');
+  lbl.style.top=(mb+6)+'px'; lbl.style.left=(mr+6)+'px';
+  lbl.style.display=show?'block':'none';
+  lbl.textContent=`安全領域 ${Math.round(pct*100)}%`;
+
+  const root=document.getElementById('ov-root');
+  const wrap=document.getElementById('gfx-wrap');
+  root.style.cssText='position:absolute;';
+
+  if(ovPos==='rb'){
+    root.style.bottom=mb+'px'; root.style.right=mr+'px';
+    wrap.style.transformOrigin='right bottom';
+  } else if(ovPos==='lb'){
+    root.style.bottom=mb+'px'; root.style.left=mr+'px';
+    wrap.style.transformOrigin='left bottom';
+  } else if(ovPos==='cb'){
+    root.style.bottom=mb+'px';
+    root.style.left='0'; root.style.right='0';
+    root.style.display='flex'; root.style.justifyContent='center';
+    wrap.style.transformOrigin='center bottom';
+  } else {
+    root.style.top='0'; root.style.bottom='0';
+    root.style.left='0'; root.style.right='0';
+    root.style.display='flex';
+    root.style.justifyContent='center'; root.style.alignItems='center';
+    wrap.style.transformOrigin='center center';
+  }
+  wrap.style.transform=`scale(${gs})`;
+  wrap.style.flexShrink='0';
+}
+
+function setPos(p){
+  ovPos=p;
+  ['rb','lb','cb','cc'].forEach(k=>{
+    const b=document.getElementById('pos-'+k);
+    if(b) b.classList.toggle('active', k===p);
+  });
+  updateSafeZone();
+}
+
+// ══════════════════════════════════════
+//  PREVIEW SCALE
+// ══════════════════════════════════════
+function getBaseScale(){
+  const panel=document.getElementById('preview-panel');
+  const pw=panel.clientWidth-20;
+  const ph=panel.clientHeight-60;
+  return Math.min(pw/1920, ph/1080);
+}
+function getScale(){ return getBaseScale()*zoomMul; }
+function scalePreview(){
+  const s=getScale();
+  document.getElementById('ov-canvas').style.transform=`translate(${panX}px,${panY}px) scale(${s})`;
+  document.getElementById('zoom-lbl').textContent=Math.round(s*100)+'%';
+}
+function resetView(){ zoomMul=1.0; panX=0; panY=0; scalePreview(); }
+function adjZoom(f){
+  if(f===0){ resetView(); return; }
+  const container=document.getElementById('preview-container');
+  const cx=container.clientWidth/2, cy=container.clientHeight/2;
+  zoomToward(cx, cy, f);
+}
+function zoomToward(cx, cy, factor){
+  const oldS=getScale();
+  zoomMul=Math.min(Math.max(zoomMul*factor, 0.05), 8);
+  const newS=getScale();
+  panX=cx-(cx-panX)*(newS/oldS);
+  panY=cy-(cy-panY)*(newS/oldS);
+  scalePreview();
+}
+
+// ── ホイールズーム + ドラッグパン + キーボードショートカット ──
+document.addEventListener('DOMContentLoaded',()=>{
+  // カラーピッカー全てにhex入力欄を追加
+  initColorHexInputs();
+
+  // Ctrl+Z: Undo, Ctrl+Y / Ctrl+Shift+Z: Redo
+  document.addEventListener('keydown',e=>{
+    const tag=document.activeElement.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return; // 入力中は無効
+    if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key==='z'){ e.preventDefault(); undo(); }
+    if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){ e.preventDefault(); redo(); }
+  });
+
+  // Shift+↑↓: 数値入力を5ずつ変える
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName!=='INPUT'||e.target.type!=='number') return;
+    if(!e.shiftKey||(e.key!=='ArrowUp'&&e.key!=='ArrowDown')) return;
+    e.preventDefault();
+    const delta=e.key==='ArrowUp'?5:-5;
+    const min=e.target.min!==''?parseFloat(e.target.min):-Infinity;
+    const max=e.target.max!==''?parseFloat(e.target.max):Infinity;
+    const newVal=Math.min(max,Math.max(min,(parseFloat(e.target.value)||0)+delta));
+    e.target.value=newVal;
+    e.target.dispatchEvent(new Event('input',{bubbles:true}));
+  },true);
+
+  const container=document.getElementById('preview-container');
+  container.addEventListener('wheel', e=>{
+    e.preventDefault();
+    const r=container.getBoundingClientRect();
+    const cx=e.clientX-r.left, cy=e.clientY-r.top;
+    zoomToward(cx, cy, e.deltaY<0? 1.1 : 1/1.1);
+  },{passive:false});
+
+  let drag=false, lastX=0, lastY=0;
+  container.addEventListener('mousedown', e=>{
+    if(e.button!==0) return;
+    drag=true; lastX=e.clientX; lastY=e.clientY;
+    container.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', e=>{
+    if(!drag) return;
+    panX+=e.clientX-lastX; panY+=e.clientY-lastY;
+    lastX=e.clientX; lastY=e.clientY;
+    scalePreview();
+  });
+  window.addEventListener('mouseup', ()=>{
+    drag=false;
+    document.getElementById('preview-container').classList.remove('dragging');
+  });
+});
+
+// ══════════════════════════════════════
+//  EXPORT 1920×1080 PNG
+// ══════════════════════════════════════
+async function exportPNG(){
+  const btn=document.querySelector('.btn-success');
+  btn.textContent='⏳ 書き出し中...'; btn.disabled=true;
+  // ガイド画像は書き出しに含めない
+  const guideEl=document.getElementById('guide-img');
+  const guideWasVisible=guideEl.style.display!=='none';
+  if(guideWasVisible) guideEl.style.visibility='hidden';
+
+  const baseName=getExportName();
+
+  const tmp=document.createElement('div');
+  tmp.style.cssText='position:fixed;top:-99999px;left:-99999px;pointer-events:none;';
+  tmp.innerHTML=buildGraphicHTML();
+  document.body.appendChild(tmp);
+  // カスタムフォントのロード完了を待ってから計測・スケール適用（フォント未ロード時の誤計測防止）
+  await document.fonts.ready;
+  void tmp.offsetHeight; // レイアウトを強制確定させる
+  applyAutoScale(tmp);
+  applyTitleScale(tmp);
+
+  const el=tmp.firstElementChild;
+  if(!el){
+    alert('プレビューが空です');
+    document.body.removeChild(tmp);
+    btn.textContent='📥 1920×1080 書き出し'; btn.disabled=false;
+    return;
+  }
+
+  try{
+    const gs=(parseFloat(document.getElementById('gscale').value)||100)/100;
+
+    // タイトル縁取り(text-shadow)がキャプチャ境界でクリップされるのを防ぐため
+    // strokeW 分のパディングを持つラッパーでキャプチャし、描画時に補正する
+    // +5 は丸め誤差やレンダリングずれによるクリップを防ぐ安全マージン
+    const strokePad = Math.ceil(+document.getElementById('tsw').value || 0) + 5;
+    const padDiv = document.createElement('div');
+    padDiv.style.cssText = `display:inline-block;padding:${strokePad}px;box-sizing:content-box;`;
+    tmp.insertBefore(padDiv, el);
+    padDiv.appendChild(el);
+
+    // 2x でレンダリングして 1段階だけ 1/2 縮小
+    const graphicCanvas=await html2canvas(padDiv,{
+      backgroundColor:null, scale:gs*2, logging:false, useCORS:true, allowTaint:true
+    });
+
+    // パディング込みのキャンバスサイズ
+    const gwFull=Math.round(graphicCanvas.width/2), ghFull=Math.round(graphicCanvas.height/2);
+    // コンテンツのみのサイズ（配置計算に使う）― パディング分を除く
+    const padPx=Math.round(strokePad*gs);
+    const gw=gwFull-2*padPx, gh=ghFull-2*padPx;
+
+    const out=document.createElement('canvas');
+    out.width=1920; out.height=1080;
+    const ctx=out.getContext('2d');
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality='high';
+
+    const pct=parseFloat(v('safe-pct'))/100;
+    const mr=Math.round(1920*(1-pct)/2);
+    const mb=Math.round(1080*(1-pct)/2);
+
+    let x, y;
+    if(ovPos==='rb')      { x=1920-mr-gw;       y=1080-mb-gh; }
+    else if(ovPos==='lb') { x=mr;                y=1080-mb-gh; }
+    else if(ovPos==='cb') { x=(1920-gw)/2;       y=1080-mb-gh; }
+    else                  { x=(1920-gw)/2;       y=(1080-gh)/2; }
+
+    // パディング分だけ左上にずらして描画 → 影がキャンバス内に収まる
+    ctx.drawImage(graphicCanvas, x-padPx, y-padPx, gwFull, ghFull);
+
+    const link=document.createElement('a');
+    link.download=baseName+'.png';
+    link.href=out.toDataURL('image/png');
+    link.click();
+
+    setTimeout(()=>{ downloadTxt(baseName, collectStyleData()); }, 300);
+
+  }catch(err){alert('書き出しエラー: '+err.message);}
+
+  document.body.removeChild(tmp);
+  if(guideWasVisible) guideEl.style.visibility='';
+  btn.textContent='📥 1920×1080 書き出し'; btn.disabled=false;
+}
+
+// ══════════════════════════════════════
+//  EXPORT PSD (Photoshop レイヤー分け)
+// ══════════════════════════════════════
+async function exportPSD(){
+  const btn=document.querySelector('.btn-psd');
+  btn.textContent='⏳ PSD生成中...'; btn.disabled=true;
+  // ガイド画像は書き出しに含めない
+  const guideElPsd=document.getElementById('guide-img');
+  const guideVisiblePsd=guideElPsd.style.display!=='none';
+  if(guideVisiblePsd) guideElPsd.style.visibility='hidden';
+
+  const baseName=getExportName();
+
+  const tmp=document.createElement('div');
+  tmp.style.cssText='position:fixed;top:-99999px;left:-99999px;pointer-events:none;';
+  tmp.innerHTML=buildGraphicHTML();
+  document.body.appendChild(tmp);
+  await document.fonts.ready;
+  void tmp.offsetHeight;
+  applyAutoScale(tmp);
+  applyTitleScale(tmp);
+
+  const el=tmp.firstElementChild;
+  if(!el){
+    alert('プレビューが空です');
+    document.body.removeChild(tmp);
+    btn.textContent='🖼 PSD書き出し'; btn.disabled=false;
+    return;
+  }
+
+  try{
+    const gs=(parseFloat(document.getElementById('gscale').value)||100)/100;
+    const gw=Math.round(el.offsetWidth*gs);
+    const gh=Math.round(el.offsetHeight*gs);
+
+    // PNG書き出しと同じ配置計算
+    const pct=parseFloat(v('safe-pct'))/100;
+    const mr=Math.round(1920*(1-pct)/2);
+    const mb=Math.round(1080*(1-pct)/2);
+    let ox, oy;
+    if(ovPos==='rb')      { ox=1920-mr-gw; oy=1080-mb-gh; }
+    else if(ovPos==='lb') { ox=mr;         oy=1080-mb-gh; }
+    else if(ovPos==='cb') { ox=(1920-gw)/2; oy=1080-mb-gh; }
+    else                  { ox=(1920-gw)/2; oy=(1080-gh)/2; }
+
+    // 指定した要素を非表示にしてレイヤー単位でキャプチャするヘルパー
+    async function captureLayer(hideSelectors){
+      hideSelectors.forEach(sel=>{
+        el.querySelectorAll(sel).forEach(n=>{ n.style.visibility='hidden'; });
+      });
+      void el.offsetHeight;
+      const raw=await html2canvas(el,{
+        backgroundColor:null, scale:gs*2, logging:false, useCORS:true, allowTaint:true
+      });
+      hideSelectors.forEach(sel=>{
+        el.querySelectorAll(sel).forEach(n=>{ n.style.visibility=''; });
+      });
+      // 2x → 1/2 縮小
+      const out=document.createElement('canvas');
+      out.width=Math.round(raw.width/2);
+      out.height=Math.round(raw.height/2);
+      const c2=out.getContext('2d');
+      c2.imageSmoothingEnabled=true;
+      c2.imageSmoothingQuality='high';
+      c2.drawImage(raw,0,0,out.width,out.height);
+      return out;
+    }
+
+    // ── 各レイヤーをキャプチャ ──
+    // タイトルレイヤー: テーブルと注釈を隠す
+    const titleCanvas=await captureLayer(['.gfx-table-wrap','.gfx-ann']);
+    // テーブルレイヤー: タイトルと注釈を隠す
+    const tableCanvas=await captureLayer(['.title-wrap','.gfx-ann']);
+    // 注釈レイヤー（有効な場合のみ）
+    let annCanvas=null;
+    if(cb('ann-en')){
+      annCanvas=await captureLayer(['.title-wrap','.gfx-table-wrap']);
+    }
+
+    // ── ag-psd で PSD 構築 ──
+    // ag-psd はブラウザ版グローバル変数 agPsd に格納されている
+    const lib=(typeof agPsd!=='undefined') ? agPsd : window.agPsd;
+    if(!lib || !lib.writePsdBuffer){
+      throw new Error('ag-psd ライブラリが読み込まれていません。ネット接続を確認してください。');
+    }
+
+    const children=[
+      { name:'テーブル', top:oy, left:ox, canvas:tableCanvas },
+      { name:'タイトル', top:oy, left:ox, canvas:titleCanvas },
+    ];
+    if(annCanvas){
+      children.push({ name:'注釈', top:oy, left:ox, canvas:annCanvas });
+    }
+
+    const psdData={
+      width:1920,
+      height:1080,
+      // 統合プレビュー用: 全要素を表示したままキャプチャ
+      canvas:(()=>{
+        // 1920×1080 の背景透明な合成キャンバス
+        const composite=document.createElement('canvas');
+        composite.width=1920; composite.height=1080;
+        const cctx=composite.getContext('2d');
+        // 各レイヤーを重ねて合成（下から: テーブル → タイトル → 注釈）
+        [tableCanvas, titleCanvas, ...(annCanvas?[annCanvas]:[])].forEach(c=>{
+          cctx.drawImage(c, ox, oy);
+        });
+        return composite;
+      })(),
+      children,
+    };
+
+    const buffer=lib.writePsdBuffer(psdData);
+    const blob=new Blob([buffer],{type:'application/octet-stream'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.download=baseName+'.psd';
+    a.href=url;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+
+  }catch(err){ alert('PSD書き出しエラー: '+err.message+'\n\n'+err.stack); }
+
+  document.body.removeChild(tmp);
+  if(guideVisiblePsd) guideElPsd.style.visibility='';
+  btn.textContent='🖼 PSD書き出し'; btn.disabled=false;
+}
+
+// ══════════════════════════════════════
+//  STYLE SAVE / LOAD
+// ══════════════════════════════════════
+const STYLE_INPUTS=[
+  ['text','tt'],['color','tc'],['color','tsc'],['number','tsw'],['number','tfs'],
+  ['checkbox','tital'],['select','tfw-title'],
+  ['checkbox','tc2-en'],['color','tc2'],['number','tc2-pos'],
+  ['select','tfw-t'],['checkbox','tital-t'],
+  ['color','hbg'],['color','htc'],['color','dbg'],['color','dtc'],
+  ['color','bc'],['number','bw'],
+  ['number','hfs'],['number','dfs'],['number','sfx-fs'],
+  ['number','cw'],['number','ch'],['number','cr'],
+  ['select','fcs'],
+  ['checkbox','lcbg-sync'],['color','lcbg'],['color','lctc'],
+  ['color','emph-bg'],['color','emph-tc'],
+  ['number','tgap'],
+  ['checkbox','ann-en'],['text','ann-txt'],['number','ann-fs'],['select','ann-align'],
+  ['range','safe-pct'],
+  ['range','gscale'],
+  ['checkbox','en-adj'],['number','en-vshift'],['number','en-fsize'],['number','en-vscale'],
+];
+
+// ══════════════════════════════════════
+//  COLOR PICKER + HEX INPUT SYNC
+// ══════════════════════════════════════
+// タイトル文字色①と②をスワップ
+function swapTitleColors(){
+  const c1=document.getElementById('tc');
+  const c2=document.getElementById('tc2');
+  const tmp=c1.value;
+  c1.value=c2.value;
+  c2.value=tmp;
+  // hex入力欄も同期（initColorHexInputs で設定した _hexEl プロパティを使用）
+  if(c1._hexEl) c1._hexEl.value=c1.value;
+  if(c2._hexEl) c2._hexEl.value=c2.value;
+  rp();
+  _snap();
+}
+
+function initColorHexInputs(){
+  document.querySelectorAll('input[type=color]').forEach(colorEl=>{
+    // color input を .hex-wrap で包む（スウォッチ＋HEX入力をインライン並列表示）
+    const wrap=document.createElement('span');
+    wrap.className='hex-wrap';
+    colorEl.parentNode.insertBefore(wrap,colorEl);
+    wrap.appendChild(colorEl);
+
+    const hexEl=document.createElement('input');
+    hexEl.type='text';
+    hexEl.value=colorEl.value;
+    hexEl.placeholder='#000000';
+    hexEl.maxLength=7;
+    hexEl.className='hex-inp';
+    hexEl.title='HEXカラーコードを直接入力（例: #ff4466）';
+    wrap.appendChild(hexEl);
+
+    // カラーピッカー変更 → HEX同期
+    colorEl.addEventListener('input',()=>{ hexEl.value=colorEl.value; });
+
+    // HEX入力 → カラーピッカー同期
+    hexEl.addEventListener('input',()=>{
+      let val=hexEl.value.trim();
+      if(!val.startsWith('#')) val='#'+val;
+      if(/^#[0-9a-fA-F]{6}$/.test(val)){
+        colorEl.value=val;
+        colorEl.dispatchEvent(new Event('input',{bubbles:true}));
+      }
+    });
+
+    // フォーカスが外れたら有効値に正規化
+    hexEl.addEventListener('blur',()=>{ hexEl.value=colorEl.value; });
+
+    colorEl._hexEl=hexEl;
+  });
+}
+
+// スタイル読み込み後などにhex入力欄をcolor入力と同期
+function syncHexInputs(){
+  document.querySelectorAll('input[type=color]').forEach(colorEl=>{
+    if(colorEl._hexEl){
+      colorEl._hexEl.value=colorEl.value;
+      colorEl._hexEl.disabled=colorEl.disabled;
+    }
+  });
+}
+
+// ラベル列背景をヘッダー背景と同期
+function syncLcbg(){
+  const sync=document.getElementById('lcbg-sync').checked;
+  const lcbgEl=document.getElementById('lcbg');
+  // lcbg の値は変えない（ユーザーが設定した色を保持する）
+  // 描画側で sync フラグを見て hbg を使う
+  lcbgEl.disabled=sync;
+  // hex入力欄も同じく無効化
+  if(lcbgEl._hexEl) lcbgEl._hexEl.disabled=sync;
+  rp(); // チェック変更をすぐにプレビューへ反映
+}
+
+function collectStyleData(){
+  const data={version:2};
+  STYLE_INPUTS.forEach(([type,id])=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    data[id]=(type==='checkbox')?el.checked:el.value;
+  });
+  data.fonts={title:fpSel.title, table:fpSel.table};
+  data.cols=cols.map(c=>({id:c.id,label:c.label,wOfs:c.wOfs||0,visible:c.visible!==false,suffix:c.suffix||'',sfxGap:c.sfxGap||0,xShift:c.xShift||0}));
+  data.rows=rows.map(r=>({id:r.id,vals:[...r.vals],emph:r.emph?[...r.emph]:r.vals.map(()=>false)}));
+  data.nci=nci; data.nri=nri;
+  data.ovPos=ovPos;
+  return data;
+}
+
+function downloadTxt(baseName, data){
+  const json=JSON.stringify(data,null,2);
+  const blob=new Blob([json],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=baseName+'.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function getExportName(){
+  const raw=(document.getElementById('export-name').value||'overlay').trim();
+  return raw.replace(/[\\/:*?"<>|]/g,'_') || 'overlay';
+}
+
+function saveStyle(){
+  downloadTxt(getExportName(), collectStyleData());
+}
+
+function loadStyle(input){
+  const file=input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      STYLE_INPUTS.forEach(([type,id])=>{
+        if(!(id in data)) return;
+        const el=document.getElementById(id);
+        if(!el) return;
+        if(type==='checkbox') el.checked=!!data[id];
+        else el.value=data[id];
+      });
+      if(data.fonts){
+        if(data.fonts.title) selectFont('title',data.fonts.title.name,data.fonts.title.css);
+        if(data.fonts.table) selectFont('table',data.fonts.table.name,data.fonts.table.css);
+      }
+      if(Array.isArray(data.cols)) cols=data.cols.map(c=>({id:c.id,label:c.label,wOfs:c.wOfs||0,visible:c.visible!==false,suffix:c.suffix||'',sfxGap:c.sfxGap||0,xShift:c.xShift||0}));
+      if(Array.isArray(data.rows)) rows=data.rows.map(r=>({
+        id:r.id,
+        vals:[...r.vals],
+        emph:Array.isArray(r.emph)?[...r.emph]:r.vals.map(()=>false)
+      }));
+      if(data.nci) nci=data.nci;
+      if(data.nri) nri=data.nri;
+      if(data.ovPos) setPos(data.ovPos); else setPos('rb');
+
+      renderCols(); renderRows();
+      updateSafeZone();
+      const sp=document.getElementById('safe-pct');
+      if(sp) document.getElementById('safe-pct-v').textContent=sp.value;
+      const gs=document.getElementById('gscale');
+      if(gs) document.getElementById('gscale-v').textContent=gs.value;
+      document.getElementById('lc-row').style.display=
+        document.getElementById('fcs').value==='label'?'block':'none';
+      syncLcbg();
+      syncHexInputs(); // hex入力欄をカラーピッカー値と同期
+      rp(); _snap();
+      alert('スタイルを読み込みました！');
+    }catch(err){
+      alert('読み込みエラー: '+err.message);
+    }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ══════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════
+function v(id){ return document.getElementById(id).value; }
+function cb(id){ return document.getElementById(id).checked; }
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════
+//  GUIDE IMAGE
+// ══════════════════════════════════════
+let guideDataUrl=null;
+
+function loadGuide(inp){
+  const f=inp.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    guideDataUrl=e.target.result;
+    document.getElementById('guide-fname').textContent=f.name;
+    // 画像の自然サイズをデフォルト値に設定
+    const img=new Image();
+    img.onload=()=>{
+      document.getElementById('guide-w').value=img.naturalWidth;
+      document.getElementById('guide-h').value=img.naturalHeight;
+      // 中央に配置
+      document.getElementById('guide-x').value=Math.round((1920-img.naturalWidth)/2);
+      document.getElementById('guide-y').value=Math.round((1080-img.naturalHeight)/2);
+      updGuide();
+    };
+    img.src=guideDataUrl;
+  };
+  reader.readAsDataURL(f);
+  inp.value='';
+}
+
+function clearGuide(){
+  guideDataUrl=null;
+  document.getElementById('guide-fname').textContent='ファイル未選択';
+  document.getElementById('guide-img').style.display='none';
+}
+
+function updGuide(){
+  const el=document.getElementById('guide-img');
+  if(!guideDataUrl){ el.style.display='none'; return; }
+  const op=(+document.getElementById('guide-op').value||50)/100;
+  const x=+document.getElementById('guide-x').value||0;
+  const y=+document.getElementById('guide-y').value||0;
+  const w=+document.getElementById('guide-w').value||1920;
+  const h=+document.getElementById('guide-h').value||1080;
+  el.src=guideDataUrl;
+  el.style.display='block';
+  el.style.left=x+'px';
+  el.style.top=y+'px';
+  el.style.width=w+'px';
+  el.style.height=h+'px';
+  el.style.opacity=op;
+}
+
+// ── ガイド画像ドラッグ移動 ──
+(function(){
+  let dragging=false, startX=0, startY=0, origX=0, origY=0;
+  document.addEventListener('mousedown',e=>{
+    const el=document.getElementById('guide-img');
+    if(e.target!==el||!guideDataUrl) return;
+    e.stopPropagation(); // パン操作と競合しないよう
+    dragging=true;
+    startX=e.clientX; startY=e.clientY;
+    origX=+document.getElementById('guide-x').value||0;
+    origY=+document.getElementById('guide-y').value||0;
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging) return;
+    // ov-canvas の現在の表示スケールを取得
+    const canvas=document.getElementById('ov-canvas');
+    const rect=canvas.getBoundingClientRect();
+    const scale=rect.width/1920;
+    const dx=(e.clientX-startX)/scale;
+    const dy=(e.clientY-startY)/scale;
+    const nx=Math.round(origX+dx);
+    const ny=Math.round(origY+dy);
+    document.getElementById('guide-x').value=nx;
+    document.getElementById('guide-y').value=ny;
+    updGuide();
+  });
+  document.addEventListener('mouseup',()=>{ dragging=false; });
+})();
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+window.onload=()=>{
+  renderCols(); renderRows();
+  setPos(ovPos);
+  scalePreview();
+  rp();
+  _snap(); // 初期状態をhistoryに記録
+  updateWeightSelect('tfw-t', fpSel.table.css);   // テーブルフォントの使用可能ウェイトを検出
+  updateWeightSelect('tfw-title', fpSel.title.css); // タイトルフォントの使用可能ウェイトを検出
+};
+window.addEventListener('resize', ()=>{ panX=0; panY=0; scalePreview(); });
+</script>
+</body>
+</html>

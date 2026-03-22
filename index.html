@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
-<title>★kazukiのツール置き場じ★</title>
+<title>★kazukiのツール置き場★</title>
 <style>
 /* ===== 90年代スタイル ===== */
 body {
@@ -275,7 +275,7 @@ body {
   min-width: 0;
 }
 
-/* ツール ルリスト */
+/* ツールカードテーブル */
 .tool-table {
   border-collapse: collapse;
   width: 100%;
@@ -345,7 +345,7 @@ body {
   border-style: inset;
 }
 
-/* 追加 ボタン行 */
+/* 追加ボタン行 */
 .add-row {
   background: #060e06;
   border: 2px dashed #448844;
@@ -384,7 +384,7 @@ body {
   margin-top: 4px;
 }
 
-/* 未完成リンク（�1ち战しァしは战字クリダカリダ不叿） */
+/* 未完成リンク（打ち消し線・クリック不可） */
 .wip-link {
   display: block;
   color: #555577;
@@ -417,7 +417,7 @@ body {
   50%      { text-shadow: 0 0 10px #aa44aa, 0 0 18px #aa44aa; }
 }
 
-/* キリ番メッセーバップアップ */
+/* キリ番メッセージポップアップ */
 .kiriban-popup {
   display: none;
   position: fixed;
@@ -457,17 +457,16 @@ body {
 <!-- ★ マーキー ★ -->
 <div class="marquee-wrap">
   <span class="marquee-inner">
-    ★★★ kazukiのツール置き場へよう㍗にぇうすと！★★★　#��#��%��サイトはIE4-/Netscape4.7飥豚です、　　相亚リンク夤次へメールをえ管理真とう对使、　　最終更新：2026年3月3日
+    ★★★ kazukiのツール置き場へようこそ！★★★　　　当サイトはIE4.0/Netscape4.7推奨です　　　相互リンク大歓迎！管理人へメールを！　　　最終更新：2026年3月3日
   </span>
 </div>
 
-<!-- ★ ��イトル ★ -->
+<!-- ★ タイトル ★ -->
 <div class="title-area">
   <div class="site-title-retro">★ My Tools ★</div>
-  <div class="site-subtitle-retro">〜 kazukiの釪湟ツール置き場 〜</div>
+  <div class="site-subtitle-retro">〜 kazukiの自作ツール置き場 〜</div>
   <div style="font-size:11px; color:#ffff88; margin-top:4px;">
-    ＊このサイトで其护しているツールは自田にお使いくつさい＊
-
+    ＊このサイトで公開しているツールは自由にお使いください＊
   </div>
 </div>
 
@@ -488,7 +487,7 @@ body {
   <div class="kiriban-box">
     <div style="font-size:10px; margin-bottom:2px;">次のキリ番は</div>
     <div class="kiriban-num" id="nextKiriban">---</div>
-    <div style="font-size:10px; margin-top:2px;">ひットした方はBBSへ！</div>
+    <div style="font-size:10px; margin-top:2px;">ゲットした方はBBSへ！</div>
   </div>
 </div>
 
@@ -503,23 +502,22 @@ body {
       <div class="sidebar-title">■ MENU ■</div>
       <a href="index.html" class="sidebar-link">TOP</a>
       <a href="index.html" class="sidebar-link">ツール一覧 <span class="new-badge">NEW</span></a>
+      <span class="wip-link">スクリプト集</span>
       <span class="wip-link">更新履歴</span>
       <span class="wip-link">掲示板(BBS)</span>
       <span class="wip-link">自己紹介</span>
-      <span class="wip-link">リング集</span>
+      <span class="wip-link">リンク集</span>
       <span class="wip-link">メール</span>
     </div>
     <div class="sidebar-box">
       <div class="sidebar-title">■ カテゴリ ■</div>
-      <a href="tool-mojicounter.html" class="sidebar-link">テキスト系</a>
-      <span class="wip-link">計算・変換</span>
-      <span class="wip-link">ユーティリティ</span>
+      <a href="tool-overlay.html" class="sidebar-link">ユーティリティ</a>
     </div>
     <div class="sidebar-box" style="font-size:10px; color:#ffff88; line-height:1.8;">
       <div class="sidebar-title">■ INFO ■</div>
       <div>管理人：kazuki</div>
       <div>開設：2026/03</div>
-      <div>ツール数：3本</div>
+      <div>ツール数：2本</div>
       <div style="margin-top:4px; color:#ff8888;">＊無断転載禁止＊</div>
     </div>
   </div>
@@ -536,7 +534,6 @@ body {
       <span class="filter-label">カテゴリ絞込▶</span>
       <button class="filter-btn-retro active" data-filter="all">【全て】</button>
       <button class="filter-btn-retro" data-filter="text">テキスト</button>
-      <button class="filter-btn-retro" data-filter="calc">計算</button>
       <button class="filter-btn-retro" data-filter="util">ユーティリティ</button>
     </div>
 
@@ -544,60 +541,39 @@ body {
     <div id="toolList">
 
       <!-- Tool 1 -->
-      <div class="tool-row" data-category="text">
-        <div class="tool-icon-cell">✍️</div>
+      <div class="tool-row" data-category="util">
+        <div class="tool-icon-cell">📊</div>
         <div class="tool-info-cell">
           <div class="tool-name-retro">
-            文字カウンター
-            <span class="tool-tag-retro">テキスト</span>
+            表ジェネレーター
+            <span class="tool-tag-retro">ユーティリティ</span>
             <span class="new-badge">NEW</span>
           </div>
           <div class="tool-desc-retro">
-            入力した文章の文字数・単語数・行数をリアルタイムでカウントするツールです。<br>
-            ブログや作文の文字数チェックにどうぞ！
+            Excelデータから表を作ります。（※PNG出力、あとから修正可能）
           </div>
-          <a href="tool-mojicounter.html" class="tool-open-btn">▶ ツールを開く</a>
+          <a href="tool-overlay.html" class="tool-open-btn">▶ ツールを開く</a>
         </div>
       </div>
 
       <!-- Tool 2 -->
-      <div class="tool-row" data-category="calc">
-        <div class="tool-icon-cell">🔢</div>
+      <div class="tool-row" data-category="text">
+        <div class="tool-icon-cell">🗂️</div>
         <div class="tool-info-cell">
           <div class="tool-name-retro">
-            単位変換ツール
-            <span class="tool-tag-retro">計算</span>
+            テキスト整理・XML抽出ツール
+            <span class="tool-tag-retro">テキスト</span>
+            <span class="new-badge">NEW</span>
           </div>
           <div class="tool-desc-retro">
-            長さ・重さ・温度などの単位をかんたんに変換できます。<br>
-            海外のレシピや輸入品の仕様確認にも便利！
+            PremierのXMLファイルからテキストを抽出・整理するツールです。
           </div>
-          <span class="tool-open-btn wip">▶ ツールを開く（準備中）</span>
-        </div>
-      </div>
-
-      <!-- Tool 3 -->
-      <div class="tool-row" data-category="util">
-        <div class="tool-icon-cell">🎲</div>
-        <div class="tool-info-cell">
-          <div class="tool-name-retro">
-            ランダム生成ツール
-            <span class="tool-tag-retro">ユーティリティ</span>
-          </div>
-          <div class="tool-desc-retro">
-            パスワードやランダムな文字列・数字をワンクリックで生成します。<br>
-            長さや文字種も自由にカスタマイズ可能！
-          </div>
-          <span class="tool-open-btn wip">▶ ツールを開く（準備中）</span>
+          <a href="tool-xmlextractor.html" class="tool-open-btn">▶ ツールを開く</a>
         </div>
       </div>
 
     </div><!-- /#toolList -->
 
-    <!-- 追加 -->
-    <div class="add-row">
-      ＋ ツールを追加する（準備中...）
-    </div>
 
   </div><!-- /.tools-main -->
 </div><!-- /.tools-wrapper -->
@@ -658,7 +634,7 @@ function renderCounter(count) {
 function checkKiriban(count) {
   if (KIRIBAN_TARGETS.includes(count)) {
     document.getElementById('kiribanMsg').textContent =
-      'あなたは ' + count + ' 番目のえ客様です！';
+      'あなたは ' + count + ' 番目のお客様です！';
     document.getElementById('kiribanPopup').classList.add('show');
   }
 }
