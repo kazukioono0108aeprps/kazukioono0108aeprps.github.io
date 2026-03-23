@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
-<title>★kazukiのツール置き場★</title>
+<title>★ツール置き場★</title>
 <style>
 /* ===== 90年代スタイル ===== */
 body {
@@ -457,14 +457,14 @@ body {
 <!-- ★ マーキー ★ -->
 <div class="marquee-wrap">
   <span class="marquee-inner">
-    ★★★ kazukiのツール置き場へようこそ！★★★　　　当サイトはIE4.0/Netscape4.7推奨です　　　相互リンク大歓迎！管理人へメールを！　　　最終更新：2026年3月3日
+    ★★★ ツール置き場へようこそ！★★★　　　当サイトはIE4.0/Netscape4.7推奨です　　　相互リンク大歓迎！管理人へメールを！　　　最終更新：2026年3月3日
   </span>
 </div>
 
 <!-- ★ タイトル ★ -->
 <div class="title-area">
   <div class="site-title-retro">★ My Tools ★</div>
-  <div class="site-subtitle-retro">〜 kazukiの自作ツール置き場 〜</div>
+  <div class="site-subtitle-retro">〜 自作ツール置き場 〜</div>
   <div style="font-size:11px; color:#ffff88; margin-top:4px;">
     ＊このサイトで公開しているツールは自由にお使いください＊
   </div>
@@ -515,7 +515,7 @@ body {
     </div>
     <div class="sidebar-box" style="font-size:10px; color:#ffff88; line-height:1.8;">
       <div class="sidebar-title">■ INFO ■</div>
-      <div>管理人：kazuki</div>
+      <div>管理人：kazuki oono</div>
       <div>開設：2026/03</div>
       <div>ツール数：2本</div>
       <div style="margin-top:4px; color:#ff8888;">＊無断転載禁止＊</div>
@@ -602,21 +602,18 @@ body {
 </div>
 
 <script>
-// ====== キリ番カウンター ======
+// ====== キリ番カウンター（全端末共有・1日1回制限） ======
 const KIRIBAN_TARGETS = [100, 500, 1000, 2000, 5000, 10000];
 
-function getCount() {
-  const stored = localStorage.getItem('site_visit_count');
-  return stored ? parseInt(stored, 10) : 0;
-}
-function saveCount(n) {
-  localStorage.setItem('site_visit_count', String(n));
-}
+// counterapi.dev：無料の共有カウンターAPI
+const API_UP  = 'https://api.counterapi.dev/v1/kazukioono-tools/visitors/up';
+const API_GET = 'https://api.counterapi.dev/v1/kazukioono-tools/visitors';
+
 function getNextKiriban(count) {
   for (const t of KIRIBAN_TARGETS) {
     if (t > count) return t;
   }
-  return Math.ceil(count / 10000 + 1) * 10000;
+  return Math.ceil((count + 1) / 10000) * 10000;
 }
 
 function renderCounter(count) {
@@ -643,12 +640,41 @@ function closeKiriban() {
   document.getElementById('kiribanPopup').classList.remove('show');
 }
 
-// 初回アクセスでカウントアップ
-let count = getCount() + 1;
-saveCount(count);
-renderCounter(count);
-document.getElementById('nextKiriban').textContent = getNextKiriban(count).toLocaleString();
-checkKiriban(count);
+async function initCounter() {
+  // 今日の日付（YYYY-MM-DD）
+  const TODAY = new Date().toISOString().slice(0, 10);
+  const lastVisit = localStorage.getItem('last_visit_date');
+  const isNewDay = (lastVisit !== TODAY);
+
+  try {
+    // 新しい日 → カウントアップ、同じ日 → 現在値を取得のみ
+    const resp = await fetch(isNewDay ? API_UP : API_GET);
+    const data = await resp.json();
+    const count = typeof data.count === 'number' ? data.count : 0;
+
+    if (isNewDay) {
+      localStorage.setItem('last_visit_date', TODAY);
+      checkKiriban(count);
+    }
+
+    renderCounter(count);
+    document.getElementById('nextKiriban').textContent = getNextKiriban(count).toLocaleString();
+
+  } catch(e) {
+    // API失敗時のフォールバック（localStorage）
+    const stored = parseInt(localStorage.getItem('site_visit_count_fb') || '0', 10);
+    const count = isNewDay ? stored + 1 : stored;
+    if (isNewDay) {
+      localStorage.setItem('site_visit_count_fb', String(count));
+      localStorage.setItem('last_visit_date', TODAY);
+      checkKiriban(count);
+    }
+    renderCounter(count);
+    document.getElementById('nextKiriban').textContent = getNextKiriban(count).toLocaleString();
+  }
+}
+
+initCounter();
 
 
 // ====== フィルター ======
