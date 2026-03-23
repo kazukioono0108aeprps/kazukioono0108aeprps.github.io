@@ -641,16 +641,20 @@ function closeKiriban() {
 }
 
 async function initCounter() {
-  // 今日の日付（YYYY-MM-DD）
   const TODAY = new Date().toISOString().slice(0, 10);
   const lastVisit = localStorage.getItem('last_visit_date');
   const isNewDay = (lastVisit !== TODAY);
+  // 前回取得した値をキャッシュとして保持（API失敗時に0にならないよう）
+  const cached = parseInt(localStorage.getItem('site_visit_count_cache') || '0', 10);
 
   try {
-    // 新しい日 → カウントアップ、同じ日 → 現在値を取得のみ
     const resp = await fetch(isNewDay ? API_UP : API_GET);
+    if (!resp.ok) throw new Error('api error');
     const data = await resp.json();
-    const count = typeof data.count === 'number' ? data.count : 0;
+    const count = typeof data.count === 'number' ? data.count : cached;
+
+    // 取得成功したら常にキャッシュ更新
+    localStorage.setItem('site_visit_count_cache', String(count));
 
     if (isNewDay) {
       localStorage.setItem('last_visit_date', TODAY);
@@ -661,16 +665,15 @@ async function initCounter() {
     document.getElementById('nextKiriban').textContent = getNextKiriban(count).toLocaleString();
 
   } catch(e) {
-    // API失敗時のフォールバック（localStorage）
-    const stored = parseInt(localStorage.getItem('site_visit_count_fb') || '0', 10);
-    const count = isNewDay ? stored + 1 : stored;
+    // API失敗時はキャッシュ値を表示（絶対に0にしない）
+    const fallback = isNewDay ? cached + 1 : cached;
     if (isNewDay) {
-      localStorage.setItem('site_visit_count_fb', String(count));
+      localStorage.setItem('site_visit_count_cache', String(fallback));
       localStorage.setItem('last_visit_date', TODAY);
-      checkKiriban(count);
+      checkKiriban(fallback);
     }
-    renderCounter(count);
-    document.getElementById('nextKiriban').textContent = getNextKiriban(count).toLocaleString();
+    renderCounter(fallback);
+    document.getElementById('nextKiriban').textContent = getNextKiriban(fallback).toLocaleString();
   }
 }
 
