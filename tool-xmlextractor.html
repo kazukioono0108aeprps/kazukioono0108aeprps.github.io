@@ -530,11 +530,54 @@ function processFile(file) {
   reader.readAsText(file);
 }
 
+// Document-wide hash → decoded text map (populated in parseXML, used in extractTextFromParam)
+let _hashToText = {};
+
+function buildHashToTextMap(doc) {
+  const map = {};
+  for (const param of doc.querySelectorAll('parameter')) {
+    const pid = param.querySelector('parameterid');
+    if (!pid || pid.textContent !== '1') continue;
+    const hashEl = param.querySelector('hash');
+    const valEl  = param.querySelector('value');
+    if (!hashEl || !hashEl.textContent || !valEl || !valEl.textContent) continue;
+    const hash = hashEl.textContent.trim();
+    if (hash in map) continue; // already resolved
+    try {
+      const text = decodeSourceText(valEl.textContent.trim());
+      if (text !== '') map[hash] = text;
+    } catch(e) {}
+  }
+  return map;
+}
+
+function decodeSourceText(b64) {
+  const binStr = atob(b64);
+  const len = binStr.length;
+  if (len < 12) return '';
+  const data = new Uint8Array(len);
+  for (let i = 0; i < len; i++) data[i] = binStr.charCodeAt(i);
+  const SIG = [0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x00, 0x00];
+  outer: for (let i = 0; i <= len - SIG.length - 4; i++) {
+    for (let s = 0; s < SIG.length; s++) { if (data[i + s] !== SIG[s]) continue outer; }
+    const lenPos = i + SIG.length;
+    const textLen = data[lenPos] | (data[lenPos+1] << 8) | (data[lenPos+2] << 16) | (data[lenPos+3] << 24);
+    if (textLen <= 0 || textLen > 10000) continue;
+    const textStart = lenPos + 4;
+    if (textStart + textLen > len) continue;
+    try { return new TextDecoder('utf-8').decode(data.slice(textStart, textStart + textLen)); } catch(e) { continue; }
+  }
+  return '';
+}
+
 function parseXML(xmlStr) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlStr, 'text/xml');
   const seq = doc.querySelector('sequence');
   if (!seq) throw new Error('sequence要素が見つかりません');
+
+  // ドキュメント全体でhash→テキストのマッピングを構築
+  _hashToText = buildHashToTextMap(doc);
 
   const seqName = seq.querySelector(':scope > name')?.textContent || 'Untitled';
   const rateEl  = seq.querySelector(':scope > rate');
@@ -613,26 +656,18 @@ function extractTextFromParam(effectEl) {
   try {
     const params = effectEl.querySelectorAll('parameter');
     let b64 = '';
+    let hashKey = '';
     for (const p of params) {
-      if ((p.querySelector('parameterid')?.textContent || '') === '1') { b64 = (p.querySelector('value')?.textContent || '').trim(); break; }
-    }
-    if (!b64) return '';
-    const bin = atob(b64);
-    const len = bin.length;
-    if (len < 6) return '';
-    if (bin.charCodeAt(len - 1) !== 0) return '';
-    // Skip 4 trailing null bytes, then for each candidate text length,
-    // read the 4-byte LE length field immediately before the text.
-    // Structure: ... [4-byte LE length] [textLen bytes UTF-8] [4 null bytes]
-    for (let textLen = 1; textLen <= len - 8 && textLen < 10000; textLen++) {
-      const p = len - 4 - textLen - 4;
-      const readLen = bin.charCodeAt(p) | (bin.charCodeAt(p+1) << 8) | (bin.charCodeAt(p+2) << 16) | (bin.charCodeAt(p+3) << 24);
-      if (readLen === textLen) {
-        const bytes = new Uint8Array(textLen);
-        for (let i = 0; i < textLen; i++) bytes[i] = bin.charCodeAt(p + 4 + i);
-        return new TextDecoder('utf-8').decode(bytes);
+      if ((p.querySelector('parameterid')?.textContent || '') === '1') {
+        b64 = (p.querySelector('value')?.textContent || '').trim();
+        hashKey = (p.querySelector('hash')?.textContent || '').trim();
+        break;
       }
     }
+    // valueがある場合はdecodeSourceTextで直接デコード
+    if (b64) return decodeSourceText(b64);
+    // valueがない場合、hashでドキュメント全体のマッピングを参照
+    if (hashKey && hashKey in _hashToText) return _hashToText[hashKey];
     return '';
   } catch(e) { return ''; }
 }
