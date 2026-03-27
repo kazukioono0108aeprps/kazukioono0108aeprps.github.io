@@ -621,9 +621,11 @@ function extractTextFromParam(effectEl) {
     const len = bin.length;
     if (len < 6) return '';
     if (bin.charCodeAt(len - 1) !== 0) return '';
-    const nullPos = len - 1;
-    for (let textLen = 1; textLen <= nullPos - 4 && textLen < 10000; textLen++) {
-      const p = nullPos - textLen - 4;
+    // Skip 4 trailing null bytes, then for each candidate text length,
+    // read the 4-byte LE length field immediately before the text.
+    // Structure: ... [4-byte LE length] [textLen bytes UTF-8] [4 null bytes]
+    for (let textLen = 1; textLen <= len - 8 && textLen < 10000; textLen++) {
+      const p = len - 4 - textLen - 4;
       const readLen = bin.charCodeAt(p) | (bin.charCodeAt(p+1) << 8) | (bin.charCodeAt(p+2) << 16) | (bin.charCodeAt(p+3) << 24);
       if (readLen === textLen) {
         const bytes = new Uint8Array(textLen);
